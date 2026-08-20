@@ -1,0 +1,250 @@
+.page {
+  /* Chart colors below are a separate, colorblind-validated data-viz
+     palette — NOT part of the brand palette in docs/frontend-design.md §3.
+     Don't re-theme them to match; see that section for why. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --chart-surface: #fcfcfb;
+  --grid-line: #e1e0d9;
+  --axis-line: #c3c2b7;
+  padding-block: var(--space-4) var(--space-6);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.logoutBtn {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.logoutBtn:hover {
+  background: var(--color-bg-alt);
+}
+
+.notice {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.rangeRow {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.rangeBtn {
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.rangeBtn[aria-pressed="true"] {
+  background: var(--series-1);
+  border-color: var(--series-1);
+  color: #fff;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.statTile {
+  background: var(--chart-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+
+.statLabel {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.3rem;
+}
+
+.statValue {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.chartCard {
+  background: var(--chart-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+
+.chartCard.wide {
+  grid-column: 1 / -1;
+}
+
+.chartTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 var(--space-3);
+}
+
+.tooltip {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.tooltipKey {
+  width: 10px;
+  height: 2px;
+  display: inline-block;
+}
+
+.tooltipValue {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.tooltipLabel {
+  color: var(--color-text-muted);
+}
+
+.tableToggle {
+  margin-top: var(--space-2);
+  font-size: 0.78rem;
+}
+
+.tableToggle summary {
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.tableToggle table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-2);
+  font-size: 0.8rem;
+}
+
+.tableToggle th,
+.tableToggle td {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.langLegend {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  font-size: 0.82rem;
+}
+
+.langLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.langSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.langBar {
+  display: flex;
+  height: 1.75rem;
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 2px;
+  background: var(--chart-surface);
+}
+
+.langSegment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 2ch;
+}
+
+.activityList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.activityItem {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--color-border);
+  font-size: 0.85rem;
+}
+
+.activityItem:last-child {
+  border-bottom: none;
+}
+
+.activityType {
+  font-weight: 600;
+}
+
+.activityMeta {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}

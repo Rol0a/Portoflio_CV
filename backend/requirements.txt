@@ -1,0 +1,10 @@
+fastapi==0.141.1
+uvicorn[standard]==0.38.0
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+pydantic==2.10.3
+email-validator==2.2.0  # backs pydantic EmailStr on the contact form
+pydantic-settings==2.7.0
+python-multipart==0.0.32
+bcrypt==5.0.0

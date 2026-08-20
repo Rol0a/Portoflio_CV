@@ -1,0 +1,257 @@
+# Production stack (M14). Run with:  docker compose up -d
+# (the dev stack is docker-compose.dev.yml — this file is the default one,
+# so a bare `docker compose` command on the server targets production.)
+#
+# Exposure model, which is the whole point of this file's shape:
+#   - NOTHING publishes a port to 0.0.0.0. Not Postgres, not the backend,
+#     not the frontend, not Caddy's public site.
+#   - Public traffic arrives outbound-only via cloudflared → caddy:80.
+#   - Admin traffic arrives only on the host's Tailscale IP → caddy:8443.
+# See docs/security.md §2–§4 and infrastructure/caddy/Caddyfile.
+
+x-logging: &default-logging
+  # Docker's json-file driver is unbounded by default; without this the NOC's
+  # ~2,900 lines/day and Caddy's access log fill the disk the NOC is meant to
+  # be reporting on (M16).
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-hardening: &default-hardening
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
+  logging: *default-logging
+
+services:
+  postgres:
+    <<: *default-hardening
+    image: postgres:16-alpine
+    env_file:
+      - .env
+    # Deliberately no `ports:` — unlike docker-compose.dev.yml, Postgres is
+    # reachable only from the other containers on portfolio-net.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - portfolio-net
+
+  backend:
+    <<: *default-hardening
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - .env
+    environment:
+      # Only Caddy may speak for a visitor. Pinned to Caddy's static address
+      # below rather than the whole subnet, so a future container on this
+      # network cannot forge X-Forwarded-For. See backend/app/middleware/proxy.py.
+      - TRUSTED_PROXY_IPS=${TRUSTED_PROXY_IPS:-172.20.0.10}
+    volumes:
+      # Operational scripts (seed, check_smtp, purge_retention) live at the
+      # repo root, outside this image's ./backend build context, so they are
+      # not baked in. Mounted read-only rather than moved into the context:
+      # they are run by hand on the host (docs/deployment.md §3, §6) and are
+      # not part of the served application. docker-compose.dev.yml mounts the
+      # same path read-write.
+      - ./scripts:/app/scripts:ro
+    healthcheck:
+      # The image has no curl; python is the thing guaranteed to be present.
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=3).status == 200 else 1)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - portfolio-net
+
+  frontend:
+    <<: *default-hardening
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        # Vite inlines env vars at BUILD time, so this must be a build arg —
+        # setting it at runtime would do nothing. Empty means the SPA calls
+        # its own origin (/api/v1/...), which is what Caddy serves and what
+        # the CSP's `connect-src 'self'` allows.
+        #
+        # Hardcoded empty rather than ${VITE_API_URL}: in production there is
+        # exactly one correct value, and inheriting the var would silently
+        # bake the dev value (http://localhost:8000) into the production
+        # bundle whenever .env was copied from .env.example — producing a
+        # site whose every API call is CSP-blocked and points at the
+        # visitor's own machine.
+        - VITE_API_URL=
+    healthcheck:
+      # 127.0.0.1, not localhost: nginx listens on 0.0.0.0:80 (IPv4 only), while
+      # localhost resolves to ::1 first inside the container — so a "localhost"
+      # probe is refused and the container never becomes healthy. Caddy waits on
+      # this condition, so getting it wrong keeps the whole public path down.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - portfolio-net
+
+  caddy:
+    <<: *default-hardening
+    image: caddy:2-alpine
+    # The public site (:80) is NOT published — cloudflared reaches it over the
+    # Docker network. Only the admin site is published, and only on the host's
+    # Tailscale address, so it is unreachable from the LAN and the internet.
+    ports:
+      - "${TAILSCALE_IP}:8443:8443"
+    environment:
+      - DOMAIN=${DOMAIN}
+    volumes:
+      - ./infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      # Caddy's admin API, which binds container-localhost only and is never
+      # published. Used here rather than probing a site block, so the check
+      # reports on Caddy itself instead of on its upstreams.
+      # 127.0.0.1 rather than localhost, for the same reason as the frontend
+      # above: the admin API binds 127.0.0.1:2019 only, and localhost resolves
+      # to ::1 first in this image. cloudflared waits on this condition, so a
+      # refused probe here takes the whole public path down.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      portfolio-net:
+        # Static, so TRUSTED_PROXY_IPS above names exactly one address.
+        ipv4_address: 172.20.0.10
+
+  # The only path from the public internet to this stack. It dials OUT to
+  # Cloudflare's edge and holds the connection open, so no inbound port is ever
+  # opened on the home network and the real IP is never published
+  # (docs/security.md §2). If this container is down the site is offline, which
+  # is why it is monitored rather than merely restarted.
+  cloudflared:
+    <<: *default-hardening
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      # From the Cloudflare Zero Trust dashboard (Networks → Tunnels). A
+      # secret like any other: lives in .env, never committed.
+      # The tunnel's own ingress rule must point at http://caddy:80.
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+      # Read by both the running tunnel and the `tunnel ready` healthcheck
+      # below, so one variable configures both. Bound inside the compose
+      # network only — never published to the host.
+      - TUNNEL_METRICS=0.0.0.0:2000
+      # cloudflared prefers QUIC (UDP 7844), which WSL2's NAT layer and some
+      # consumer routers drop or fragment — the tunnel then flaps or never
+      # registers while TCP egress looks perfectly healthy. Leave at 'auto'
+      # normally; set TUNNEL_TRANSPORT_PROTOCOL=http2 in .env to pin the
+      # TCP/443 fallback if the logs show QUIC handshake failures.
+      - TUNNEL_TRANSPORT_PROTOCOL=${TUNNEL_TRANSPORT_PROTOCOL:-auto}
+    healthcheck:
+      # The image has no shell, wget or curl, so a scripted probe is
+      # impossible; cloudflared ships its own /ready check that returns a
+      # proper exit code. Reports whether the tunnel actually has a live
+      # connection to Cloudflare, not merely that the process is running.
+      test: ["CMD", "cloudflared", "tunnel", "ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      caddy:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - portfolio-net
+
+  noc:
+    <<: *default-hardening
+    build:
+      context: ./noc
+    env_file:
+      - .env
+    environment:
+      - NOC_INTERVAL_SECONDS=30
+      - NOC_BACKEND_URL=http://backend:8000
+      - NOC_CADDY_URL=http://caddy:80
+      # Tunnel health on the Network Health dashboard. Without this a tunnel
+      # outage looks like a fully healthy stack from inside the network, while
+      # the site is unreachable from the internet.
+      - NOC_CLOUDFLARED_URL=http://cloudflared:2000/ready
+      # Least-privilege credential (M16) — INSERT/DELETE on
+      # network_health_samples and nothing else. Provisioned once by
+      # `make noc-role-prod` (scripts/create_noc_role.sql). Without this the
+      # service falls back to the backend's full-access DATABASE_URL from
+      # env_file above and says so at startup.
+      - NOC_DATABASE_URL=postgresql://noc_writer:${NOC_DB_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    read_only: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - portfolio-net
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  portfolio-net:
+    driver: bridge
+    ipam:
+      config:
+        # Pinned so Caddy's static address (and therefore the backend's
+        # trusted-proxy setting) is deterministic across recreates.
+        - subnet: 172.20.0.0/16

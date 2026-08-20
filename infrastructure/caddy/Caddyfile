@@ -1,0 +1,182 @@
+# Caddy reverse proxy — production (M13).
+#
+# Two site blocks, with deliberately different exposure:
+#
+#   public  ($DOMAIN, :80)  — reached ONLY through the Cloudflare Tunnel.
+#                             Serves the portfolio. Admin, auth, and internal
+#                             surfaces are refused here outright.
+#   admin   (:8443)         — reached ONLY over Tailscale, because the
+#                             production compose file publishes this port
+#                             bound to the host's Tailscale IP and nowhere
+#                             else. Serves everything, including admin.
+#
+# See docs/security.md §2 (why the tunnel), §3 (why admin is split off), and
+# §9 (why the client-IP handling below matters).
+#
+# --- Why no TLS here -----------------------------------------------------
+# Public TLS terminates at Cloudflare's edge. Caddy's automatic HTTPS is
+# deliberately NOT used for the public block: ACME requires inbound :80/:443
+# to be publicly reachable, and docs/security.md §4 never opens them — the
+# whole point of the tunnel is that nothing is listening on the home IP.
+# The site address is therefore written `http://` explicitly, which tells
+# Caddy to skip certificate provisioning rather than fail at it forever.
+# The visitor still gets valid HTTPS; it is issued by Cloudflare, not by us.
+#
+# To go end-to-end encrypted ("Full (strict)" in Cloudflare), install a
+# Cloudflare Origin Certificate and swap the public block to `{$DOMAIN}`
+# with `tls /etc/caddy/origin.pem /etc/caddy/origin-key.pem`. That is
+# hardening, not a prerequisite — the tunnel hop is already encrypted.
+{
+	# Caddy must know which peers are allowed to speak for someone else,
+	# otherwise `{remote_host}` in the access log and any downstream
+	# X-Forwarded-For handling reflect the cloudflared container instead of
+	# the visitor. Only our own containers share this network.
+	servers {
+		trusted_proxies static private_ranges
+	}
+
+	# Access logs go to stdout so Docker's logging driver owns rotation
+	# (docker-compose.yml sets max-size/max-file — see M16). Writing them to
+	# a file inside the container would grow unbounded and would also put
+	# visitor IPs on disk with no retention policy (docs/security.md §9).
+	log {
+		output stdout
+		format json
+	}
+}
+
+# Reusable snippet: the response headers every block should send.
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+		# NOTE: font-src and the fonts.googleapis.com entry in style-src are
+		# required — frontend/index.html loads Fraunces + Karla from Google
+		# Fonts, which is the typography frontend-design.md §1 specifies. The
+		# stricter CSP sketched in docs/security.md §3 omitted both and would
+		# silently break every heading and body font in production.
+		# 'unsafe-inline' in style-src covers the inline style attributes the
+		# `motion` library writes during animation.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+		# Caddy advertises itself by default; no reason to tell the internet
+		# which proxy and version is running.
+		-Server
+	}
+}
+
+# --- Default (unmatched Host) ---------------------------------------------
+# Caddy answers an unmatched Host with an empty 200, which is a confusing
+# thing for a server to do and makes a misrouted tunnel ingress rule look
+# healthy. Answer 404 instead. The more specific host matcher below still
+# wins for the real domain — Caddy sorts site blocks by specificity.
+http://:80 {
+	respond 404
+}
+
+# --- Public site ----------------------------------------------------------
+# Bound to :80 inside the Docker network only. The production compose file
+# publishes NO host port for this — the Cloudflare Tunnel ingress rule points
+# at http://caddy:80 from inside the network. Nothing on the host, LAN, or
+# public internet can reach it directly.
+http://{$DOMAIN} {
+	import security_headers
+	encode zstd gzip
+
+	# `route` (rather than bare `handle`) pins these to their written order.
+	# Caddy would otherwise sort handlers by path specificity — which happens
+	# to produce the same result here, but a security boundary should not
+	# depend on an implicit sort staying the way it is today.
+	route {
+		# The NOC metrics endpoint is unauthenticated by design, on the
+		# stated grounds that Caddy never proxies it publicly
+		# (backend/app/routes/internal.py). This is the line that makes that
+		# docstring true. backend/tests/ asserts it stays here.
+		handle /internal/* {
+			respond 404
+		}
+
+		# Admin API. Unreachable from the public internet, so a stolen
+		# session cookie or password still cannot reach the dashboard from
+		# outside the tailnet (docs/security.md §3).
+		handle /api/v1/admin/* {
+			respond 404
+		}
+
+		# Login itself is refused publicly too — the admin only ever signs in
+		# over Tailscale, so exposing the form to the internet would offer a
+		# brute-force target for no benefit. This is stricter than the sketch
+		# in docs/security.md §3, which left /api/v1/auth/* public.
+		# auth_service's rate limiting is now defence-in-depth behind this,
+		# not the front line.
+		handle /api/v1/auth/* {
+			respond 404
+		}
+
+		# The admin SPA routes render a login form that cannot authenticate
+		# against this hostname anyway; not serving it avoids advertising the
+		# admin surface exists.
+		handle /admin* {
+			respond 404
+		}
+
+		handle /api/* {
+			reverse_proxy backend:8000 {
+				# Cloudflare guarantees CF-Connecting-IP is the real visitor.
+				# Overwriting X-Forwarded-For with it — rather than letting
+				# the chain accumulate — is what makes the backend's
+				# ProxyHeadersMiddleware resolve a true per-visitor address,
+				# which unique-visitor analytics and per-IP login throttling
+				# both depend on (docs/security.md §9, M16).
+				#
+				# If the header is absent (nothing but our own containers can
+				# produce that), this sets an empty value, and the backend
+				# correctly falls back to the peer address.
+				header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+			}
+		}
+
+		# Everything else is the built SPA, served by the frontend container's
+		# nginx (which owns static cache headers and the SPA/404 fallback —
+		# see frontend/nginx.conf and M17).
+		handle {
+			reverse_proxy frontend:80
+		}
+	}
+}
+
+# --- Admin site -----------------------------------------------------------
+# Plain HTTP on :8443, which is safe ONLY because docker-compose.yml
+# publishes it as "${TAILSCALE_IP}:8443:8443" — bound to the host's Tailscale
+# address, so it is unreachable from the LAN, the WAN, and the tunnel alike.
+# Traffic to it is already encrypted by WireGuard.
+#
+# (docs/security.md §3 sketched `bind tailscale0` instead. That cannot work
+# from inside a container: the host's tailscale0 interface does not exist in
+# the container's network namespace. Binding the published port to the
+# Tailscale IP achieves the same restriction and needs no host networking.)
+http://:8443 {
+	import security_headers
+	encode zstd gzip
+
+	route {
+		# Denied even here: the NOC service reaches /internal/metrics directly
+		# over the Docker network, so Caddy never needs to proxy it, and the
+		# admin dashboard reads the same data via /api/v1/admin/network-health.
+		handle /internal/* {
+			respond 404
+		}
+
+		handle /api/* {
+			reverse_proxy backend:8000
+		}
+
+		handle {
+			reverse_proxy frontend:80
+		}
+	}
+}

@@ -1,0 +1,174 @@
+.page {
+  /* RAG status colors — semantic (up/down/degraded), deliberately distinct
+     from the chart series colors below and from the brand accent, same
+     principle as AdminDashboard.module.css's chart palette exclusion. See
+     docs/frontend-design.md §3. */
+  --status-up: #2f9e44;
+  --status-down: #e03131;
+  --status-degraded: #f08c00;
+  --chart-surface: #fcfcfb;
+  --grid-line: #e1e0d9;
+  --axis-line: #c3c2b7;
+  padding-block: var(--space-4) var(--space-6);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.logoutBtn {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.logoutBtn:hover {
+  background: var(--color-bg-alt);
+}
+
+.notice {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.lastUpdated {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.chartCard {
+  background: var(--chart-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.chartTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 var(--space-3);
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: var(--space-4);
+}
+
+.chartsGrid .chartCard {
+  margin-bottom: 0;
+}
+
+.chartCard.wide {
+  grid-column: 1 / -1;
+}
+
+.statusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-3);
+}
+
+.statusTile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+}
+
+.statusName {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  flex: 1;
+}
+
+.statusLatency {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.pill_up {
+  background: var(--status-up);
+}
+
+.pill_down {
+  background: var(--status-down);
+}
+
+.pill_degraded {
+  background: var(--status-degraded);
+}
+
+.packetLoss {
+  font-size: 0.85rem;
+  margin: 0 0 var(--space-2);
+}
+
+.targetList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.targetItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed var(--color-border);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.targetItem:last-child {
+  border-bottom: none;
+}
+
+.targetLatency {
+  color: var(--color-text-muted);
+}
+
+.targetUnreachable {
+  color: var(--status-down);
+  font-weight: 600;
+}

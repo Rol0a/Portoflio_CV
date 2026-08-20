@@ -1,0 +1,49 @@
+# Environment
+.env
+.env.*.local
+
+# Tunnel credentials and private keys. Required by docs/CLAUDE.md §4's
+# standing rule, added alongside the cloudflared compose service.
+.cloudflared/
+*.pem
+*.key
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.local
+
+# Python / backend
+__pycache__/
+*.pyc
+.venv/
+venv/
+backend/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
+
+# Docker
+*.pid
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Uploads (dev)
+backend/uploads/
+
+# Logs
+*.log
+
+# Private/local-only notes — real network topology, deployment parameters,
+# and other environment-specific context that must never be pushed. See
+# docs/security.md for the public/committed architecture equivalent (which
+# uses placeholders only).
+docs/CLAUDE.md
+
+# Personal/project photos served from public/ at runtime. Kept out of git —
+# privacy for the personal photo, and both are regenerable from the
+# original uploads rather than something that belongs in repo history.
+frontend/public/images/

@@ -1,0 +1,219 @@
+/* ==========================================================================
+   Design tokens
+   Palette, type, spacing, motion — see docs/frontend-design.md for the
+   rationale behind every value here. Components consume these tokens;
+   they should never hardcode a hex value.
+   ========================================================================== */
+
+:root {
+  /* ---- Palette (light — default) ----
+     Base:      #EEE4E1 cream, #E7D8C9 tan
+     Highlight: #0A2E36 deep teal, #02C39A mint
+     Contrast:  #63474D mauve
+     Dark mode mirrors this exact set (see the media query below) rather
+     than introducing new hues — 0A2E36 and EEE4E1 trade roles. */
+  --color-bg: #eee4e1;
+  --color-bg-alt: #e7d8c9;
+  --color-surface: #f8f2ef;
+  --color-text: #0a2e36;
+  --color-text-muted: #63474d;
+  --color-primary: #02c39a;
+  --color-primary-dark: #029d7d;
+  --color-on-primary: #06262c;
+  --color-accent-deep: #0a2e36;
+  --color-on-accent-deep: #eee4e1;
+  --color-contrast: #63474d;
+  --color-border: #dcc9c2;
+  --color-border-strong: #c7aca6;
+  --shadow-color: 10, 46, 54;
+
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "Karla", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2.5rem;
+  --space-6: 4rem;
+  --space-7: 6rem;
+  --max-width: 72rem;
+  --radius: 0.75rem;
+  --radius-lg: 1.5rem;
+
+  --ease-cozy: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-base: 450ms;
+  --duration-slow: 800ms;
+
+  /* Soft glow tints for decorative background blobs — derived from the
+     existing accent/contrast hues at low opacity, never new colors. */
+  --glow-mint: rgba(2, 195, 154, 0.32);
+  --glow-mauve: rgba(99, 71, 77, 0.24);
+  --glow-tan: rgba(231, 216, 201, 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #0a2226;
+    --color-bg-alt: #123a42;
+    --color-surface: #123138;
+    --color-text: #eee4e1;
+    --color-text-muted: #c79b93;
+    --color-primary: #02c39a;
+    --color-primary-dark: #33d9af;
+    --color-on-primary: #06262c;
+    --color-accent-deep: #eee4e1;
+    --color-on-accent-deep: #0a2e36;
+    --color-contrast: #b98a83;
+    --color-border: rgba(238, 228, 225, 0.14);
+    --color-border-strong: rgba(238, 228, 225, 0.24);
+    --shadow-color: 0, 0, 0;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #0a2226;
+  --color-bg-alt: #123a42;
+  --color-surface: #123138;
+  --color-text: #eee4e1;
+  --color-text-muted: #c79b93;
+  --color-primary: #02c39a;
+  --color-primary-dark: #33d9af;
+  --color-on-primary: #06262c;
+  --color-accent-deep: #eee4e1;
+  --color-on-accent-deep: #0a2e36;
+  --color-contrast: #b98a83;
+  --color-border: rgba(238, 228, 225, 0.14);
+  --color-border-strong: rgba(238, 228, 225, 0.24);
+  --shadow-color: 0, 0, 0;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--color-accent-deep);
+  color: var(--color-on-accent-deep);
+  padding: var(--space-2) var(--space-3);
+  z-index: 100;
+  border-radius: 0 0 var(--radius) 0;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
+
+/* Bottom breathing room for every non-Home page's root <section> (About,
+   Skills, Projects, Certifications, Contact) so short pages don't run
+   straight into the footer. Home doesn't use this — its full-bleed bands
+   already carry their own padding-block. See docs/frontend-design.md §7. */
+.page-section {
+  padding-bottom: var(--space-6);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  line-height: 1.15;
+  text-wrap: balance;
+  font-weight: 600;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Subtle film-grain texture for organic warmth (Nature Distilled-style
+   "handmade" quality) — a static SVG turbulence filter, not an animation,
+   so it costs nothing on scroll/interaction. Applied as an overlay via
+   ::before on sections that opt in with .grain. */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Only the readable-content wrapper needs lifting above the noise layer —
+   NOT every direct child, since decorative absolutely-positioned siblings
+   (e.g. ParallaxBlob) rely on their own z-index/position and would break
+   if forced to `position: relative` by a blanket `.grain > *` rule. */
+.grain > .container {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,336 @@
+/* Break a section out of the Layout's centered `.container` to full viewport
+   width, while keeping an inner `.container` for the actual content. */
+.fullBleed {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}
+
+/* Pairs with a decorative ParallaxBlob: establishes a stacking context and
+   lifts the real content (.container) above the blob and any grain texture,
+   regardless of DOM order. */
+.decor {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.decor > :global(.container) {
+  position: relative;
+  z-index: 1;
+}
+
+.heroBand {
+  padding-block: var(--space-2);
+}
+
+.blobMint,
+.blobMauve,
+.blobTan {
+  width: 22rem;
+  height: 22rem;
+}
+
+.blobMint {
+  top: -6rem;
+  right: -4rem;
+  background: var(--glow-mint);
+}
+
+.blobMauve {
+  bottom: -8rem;
+  left: -6rem;
+  width: 18rem;
+  height: 18rem;
+  background: var(--glow-mauve);
+}
+
+.blobTan {
+  /* Centered via margin, not `transform: translateX(-50%)` — ParallaxBlob is
+     a motion.div driven by a `y` style value, and motion sets its own
+     inline `transform` on the node each frame, which would silently
+     clobber a CSS-class transform used for centering. */
+  top: -4rem;
+  left: 50%;
+  margin-left: -13rem;
+  width: 26rem;
+  height: 26rem;
+  background: var(--glow-tan);
+}
+
+.hero {
+  padding-block: var(--space-7) var(--space-6);
+  text-align: center;
+  position: relative;
+}
+
+.portrait {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 9.5rem;
+  height: 9.5rem;
+  margin: 0 auto var(--space-4);
+  border-radius: 999px;
+  border: 3px solid var(--color-surface);
+  outline: 1px solid var(--color-border);
+  box-shadow: 0 12px 28px rgba(var(--shadow-color), 0.16);
+  transform-style: preserve-3d;
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: box-shadow var(--duration-fast) var(--ease-cozy), transform var(--duration-fast) var(--ease-cozy);
+}
+
+.portrait:hover {
+  box-shadow: 0 18px 36px rgba(var(--shadow-color), 0.22);
+}
+
+.portraitImage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portraitSheen {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    rgba(255, 255, 255, 0.55),
+    transparent 55%
+  );
+  mix-blend-mode: soft-light;
+  transition: opacity var(--duration-fast) var(--ease-cozy);
+}
+
+.portrait:hover .portraitSheen {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portrait {
+    transform: none !important;
+  }
+}
+
+.eyebrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-2);
+}
+
+.title {
+  font-size: clamp(2.75rem, 7vw, 5rem);
+  margin: 0 0 var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+.tagline {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+  font-weight: 500;
+  font-style: italic;
+  color: var(--color-contrast);
+  margin: 0 0 var(--space-4);
+}
+
+.intro {
+  max-width: 38rem;
+  margin: 0 auto var(--space-5);
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-6);
+}
+
+.statsRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  padding-block: var(--space-4);
+  margin-bottom: var(--space-5);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.primary,
+.secondary {
+  padding: 0.85rem 1.75rem;
+  border-radius: 999px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-block;
+  transition:
+    background var(--duration-fast) var(--ease-cozy),
+    transform var(--duration-fast) var(--ease-cozy),
+    box-shadow var(--duration-fast) var(--ease-cozy);
+}
+
+.primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: 0 8px 20px rgba(2, 195, 154, 0.28);
+  transform: translate(var(--magnet-x, 0px), var(--magnet-y, 0px));
+  /* A bouncy overshoot curve, standing in for spring physics — deliberately
+     distinct from --ease-cozy, reserved for this one magnetic CTA. See
+     docs/frontend-design.md §5. */
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.primary:hover {
+  background: var(--color-primary-dark);
+  transform: translate(var(--magnet-x, 0px), calc(var(--magnet-y, 0px) - 2px));
+}
+
+.secondary {
+  border: 1.5px solid var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.secondary:hover {
+  background: var(--color-bg-alt);
+  transform: translateY(-2px);
+}
+
+.scrollCue {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.scrollCueIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+  animation: bob 2.2s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrollCueIcon {
+    animation: none;
+  }
+}
+
+.section {
+  padding-block: var(--space-7);
+}
+
+.sectionAlt {
+  background: var(--color-bg-alt);
+}
+
+.sectionHead {
+  max-width: 40rem;
+  margin: 0 0 var(--space-5);
+}
+
+.sectionHead.centered {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.sectionTitle {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  margin: 0.3rem 0 var(--space-2);
+}
+
+.sectionIntro {
+  color: var(--color-text-muted);
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.viewAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-primary-dark);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.viewAll:hover {
+  text-decoration: underline;
+}
+
+.viewAllRow {
+  text-align: center;
+}
+
+.closingBand {
+  background: var(--color-accent-deep);
+  color: var(--color-on-accent-deep);
+}
+
+.closing {
+  text-align: center;
+  padding-block: var(--space-7);
+}
+
+.closingTitle {
+  color: var(--color-on-accent-deep);
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  margin: 0 0 var(--space-3);
+}
+
+.closingBody {
+  max-width: 32rem;
+  margin: 0 auto var(--space-5);
+  opacity: 0.85;
+  font-size: 1.05rem;
+}
+
+.closingCta {
+  display: inline-block;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  padding: 0.85rem 2rem;
+  border-radius: 999px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background var(--duration-fast) var(--ease-cozy), transform var(--duration-fast) var(--ease-cozy);
+}
+
+.closingCta:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+}

@@ -1,0 +1,175 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong loading this content. Please try again later.",
+    "empty": "Nothing to show yet."
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "skills": "Skills",
+    "projects": "Projects",
+    "certifications": "Certifications",
+    "contact": "Contact"
+  },
+  "home": {
+    "eyebrow": "Hi, I'm",
+    "title": "Rodrigo López",
+    "tagline": "Software, Embedded Systems & Mechatronics Engineer",
+    "intro": "I design and build systems across the boundary between software and hardware — from embedded firmware and electronics to robotics, full-stack applications, Linux infrastructure, and aerospace engineering. This portfolio documents projects that move from requirements and architecture through implementation, testing, and physical validation.",
+    "cta_projects": "View Projects",
+    "cta_cv": "Download CV",
+    "scroll_cue": "Scroll to explore",
+    "stat_projects": "Engineering projects",
+    "stat_technologies": "Technologies used",
+    "stat_certifications": "Certifications & awards",
+    "projects_eyebrow": "Selected Work",
+    "projects_title": "Things I've Built",
+    "projects_intro": "From Bluetooth-controlled robots and microcontroller firmware to full-stack infrastructure and aerospace systems — each one built the same way: define the problem, understand the interfaces, build a testable architecture, integrate hardware and software, validate the result.",
+    "projects_cta": "View all projects",
+    "certifications_eyebrow": "Credentials",
+    "certifications_title": "Certifications & Recognition",
+    "certifications_intro": "Formal training in networking, network security, and engineering, alongside recognition from the international space community.",
+    "certifications_cta": "View all certifications",
+    "closing_title": "Let's build something",
+    "closing_body": "I'm interested in engineering and software work involving embedded systems, robotics, electronics, automation, aerospace, telecommunications, full-stack development, and technical R&D. If you're building a system that combines software with real-world hardware, data, or engineering constraints, I'd like to hear about it.",
+    "closing_cta": "Get in touch"
+  },
+  "about": {
+    "eyebrow": "The Short Version",
+    "title": "About Me",
+    "body": [
+      "I'm a Mechatronics and Electronic Engineering student at Universidad del Valle de Guatemala, with experience spanning embedded systems, software development, aerospace R&D, robotics, electronics, digital fabrication, networking, and engineering research.",
+      "That work has taken me from university laboratories in Guatemala to aerospace organizations in Boulder, Colorado, and international space-industry programmes. I've developed embedded firmware, integrated sensors and communication interfaces, designed electronic and mechanical systems, supported flight-related biomedical hardware, worked on CubeSat and de-orbit concepts, automated engineering workflows, maintained Linux environments, and built full-stack software infrastructure.",
+      "I approach engineering as a systems problem rather than a collection of isolated disciplines. A useful product usually demands the mechanical structure, electronics, firmware, communications, software architecture, manufacturing constraints, testing process, and user requirements be understood at the same time. That multidisciplinary view is the common thread across everything here."
+    ],
+    "meta_title": "Quick facts",
+    "location": "Location: Guatemala City, Guatemala",
+    "email": "Email: mlopez2018ig@gmail.com",
+    "education": "Education: B.S. Mechatronics & Electronic Engineering, Universidad del Valle de Guatemala (2023–present)",
+    "focus": "Focus: Embedded systems, robotics, electronics, Linux infrastructure, aerospace"
+  },
+  "skills": {
+    "eyebrow": "What I Work With",
+    "title": "Skills",
+    "intro": "The languages, platforms, and tools I actually reach for, grouped by where they show up in the work. Bars reflect self-assessed depth, not certifications.",
+    "categories": {
+      "programming": "Programming",
+      "embedded_systems": "Embedded Systems",
+      "electronics": "Electronics",
+      "automation": "Automation",
+      "web_dev": "Web Development",
+      "ml_data": "ML & Data",
+      "cybersecurity": "Cybersecurity",
+      "linux_devops": "Linux & DevOps",
+      "engineering_tools": "Engineering Tools"
+    }
+  },
+  "projects": {
+    "eyebrow": "The Full List",
+    "title": "Projects",
+    "intro": "Every project in the portfolio — robotics, embedded firmware, aerospace research, Linux infrastructure, and full-stack software alike.",
+    "filter_all": "All",
+    "view_details": "View details",
+    "github": "GitHub",
+    "demo": "Live Demo",
+    "back": "Back to projects",
+    "not_found": "Project not found.",
+    "no_image": "Image coming soon",
+    "sections": {
+      "overview": "Overview",
+      "problem": "Problem",
+      "requirements": "Requirements",
+      "architecture": "Architecture",
+      "implementation": "Implementation",
+      "decisions": "Key Decisions",
+      "challenges": "Challenges",
+      "testing_desc": "Testing",
+      "results": "Results",
+      "lessons": "Lessons Learned"
+    }
+  },
+  "certifications": {
+    "eyebrow": "Credentials",
+    "title": "Certifications",
+    "intro": "Formal training and recognition backing the hands-on work — networking, network security, professional tools, and space-sector awards.",
+    "issued": "Issued",
+    "view_credential": "View credential"
+  },
+  "contact": {
+    "eyebrow": "Let's Talk",
+    "title": "Contact",
+    "intro": "I'm interested in engineering, software, research, and R&D work involving embedded systems, robotics, electronics, automation, aerospace, telecommunications, Linux infrastructure, and full-stack development — and in technical collaborations where multidisciplinary system integration is central to the problem.",
+    "name": "Name",
+    "email": "Email",
+    "message": "Message",
+    "send": "Send Message",
+    "elsewhere_title": "Find me elsewhere",
+    "elsewhere_body": "For source code and project documentation, GitHub is the best place to see what I'm building. For professional experience, aerospace work, and awards, connect on LinkedIn. For direct inquiries, email is fastest.",
+    "sending": "Sending…",
+    "success": "Thanks — your message is on its way.",
+    "error": "Something went wrong and your message was not sent. Please email me directly instead.",
+    "error_rate_limited": "You've sent a message recently. Please wait a few minutes before sending another."
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "disclaimer": "This server is still being built and will soon migrate to self-hosted infrastructure, so this link may change."
+  },
+  "not_found": {
+    "title": "Page not found",
+    "body": "The page you're looking for doesn't exist.",
+    "home_link": "Go back home"
+  },
+  "admin": {
+    "login": {
+      "title": "Admin Login",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Log In",
+      "invalid": "Invalid username or password.",
+      "rate_limited": "Too many attempts. Try again in {{seconds}}s."
+    },
+    "nav_analytics": "Analytics",
+    "nav_network": "Network Health",
+    "dashboard": {
+      "title": "Analytics Dashboard",
+      "logout": "Log Out",
+      "range_7": "7 days",
+      "range_30": "30 days",
+      "range_90": "90 days",
+      "stat_page_views": "Page Views",
+      "stat_unique_sessions": "Unique Sessions",
+      "stat_project_views": "Project Views",
+      "stat_github_clicks": "GitHub Clicks",
+      "stat_cv_downloads": "CV Downloads",
+      "stat_contact_clicks": "Contact Clicks",
+      "chart_visits": "Visits Over Time",
+      "chart_top_projects": "Top Projects",
+      "chart_language": "Language Distribution",
+      "recent_activity": "Recent Activity",
+      "demo_data_notice": "Showing seeded demo data — live visitor tracking (M8) isn't built yet.",
+      "no_recent_activity": "No recent activity."
+    },
+    "network_health": {
+      "title": "Network Health",
+      "logout": "Log Out",
+      "notice": "Sampled by the standalone NOC service roughly every 30 seconds.",
+      "no_data": "No samples yet — the NOC service polls shortly after startup.",
+      "last_updated": "Last updated",
+      "services_title": "Service Status",
+      "internet_title": "Internet Reachability",
+      "resources_title": "Host Resources",
+      "traffic_title": "Requests & Errors (per sample)",
+      "status_up": "Up",
+      "status_down": "Down",
+      "status_degraded": "Degraded",
+      "packet_loss": "Packet loss",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "disk": "Disk",
+      "requests": "Requests",
+      "errors": "Errors",
+      "unreachable": "Unreachable"
+    }
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "common": {
+    "loading": "Cargando…",
+    "error": "Ocurrió un error al cargar este contenido. Inténtalo de nuevo más tarde.",
+    "empty": "Aún no hay nada que mostrar."
+  },
+  "nav": {
+    "home": "Inicio",
+    "about": "Sobre mí",
+    "skills": "Habilidades",
+    "projects": "Proyectos",
+    "certifications": "Certificaciones",
+    "contact": "Contacto"
+  },
+  "home": {
+    "eyebrow": "Hola, soy",
+    "title": "Rodrigo López",
+    "tagline": "Ingeniero de Software, Sistemas Embebidos y Mecatrónica",
+    "intro": "Diseño y construyo sistemas en la frontera entre el software y el hardware: desde firmware embebido y electrónica hasta robótica, aplicaciones full-stack, infraestructura Linux e ingeniería aeroespacial. Este portafolio documenta proyectos que van de los requisitos y la arquitectura a la implementación, las pruebas y la validación física.",
+    "cta_projects": "Ver Proyectos",
+    "cta_cv": "Descargar CV",
+    "scroll_cue": "Desplázate para explorar",
+    "stat_projects": "Proyectos de ingeniería",
+    "stat_technologies": "Tecnologías usadas",
+    "stat_certifications": "Certificaciones y premios",
+    "projects_eyebrow": "Trabajo Seleccionado",
+    "projects_title": "Cosas Que He Construido",
+    "projects_intro": "Desde robots controlados por Bluetooth y firmware de microcontroladores hasta infraestructura full-stack y sistemas aeroespaciales, todos construidos igual: definir el problema, entender las interfaces, armar una arquitectura verificable, integrar hardware y software, validar el resultado.",
+    "projects_cta": "Ver todos los proyectos",
+    "certifications_eyebrow": "Credenciales",
+    "certifications_title": "Certificaciones y Reconocimientos",
+    "certifications_intro": "Formación formal en redes, seguridad de redes e ingeniería, junto con reconocimientos de la comunidad espacial internacional.",
+    "certifications_cta": "Ver todas las certificaciones",
+    "closing_title": "Construyamos algo juntos",
+    "closing_body": "Me interesan oportunidades de ingeniería y software en sistemas embebidos, robótica, electrónica, automatización, aeroespacial, telecomunicaciones, desarrollo full-stack e I+D técnica. Si estás construyendo un sistema que combina software con hardware real, datos o restricciones de ingeniería, me gustaría conversarlo.",
+    "closing_cta": "Ponte en contacto"
+  },
+  "about": {
+    "eyebrow": "La Versión Corta",
+    "title": "Sobre Mí",
+    "body": [
+      "Soy estudiante de Ingeniería Mecatrónica y Electrónica en la Universidad del Valle de Guatemala, con experiencia en sistemas embebidos, desarrollo de software, I+D aeroespacial, robótica, electrónica, fabricación digital, redes e investigación en ingeniería.",
+      "Ese trabajo me ha llevado de los laboratorios universitarios en Guatemala a organizaciones aeroespaciales en Boulder, Colorado, y a programas internacionales de la industria espacial. He desarrollado firmware embebido, integrado sensores e interfaces de comunicación, diseñado sistemas electrónicos y mecánicos, apoyado hardware biomédico de vuelo, trabajado en conceptos de CubeSat y desorbitado, automatizado flujos de trabajo de ingeniería, mantenido entornos Linux y construido infraestructura de software full-stack.",
+      "Abordo la ingeniería como un problema de sistemas y no como un conjunto de disciplinas aisladas. Un producto útil suele exigir entender al mismo tiempo la estructura mecánica, la electrónica, el firmware, las comunicaciones, la arquitectura de software, las restricciones de manufactura, el proceso de pruebas y los requisitos del usuario. Esa mirada multidisciplinaria es el hilo común de todo lo que hay aquí."
+    ],
+    "meta_title": "Datos rápidos",
+    "location": "Ubicación: Ciudad de Guatemala, Guatemala",
+    "email": "Correo: mlopez2018ig@gmail.com",
+    "education": "Formación: Ing. Mecatrónica y Electrónica, Universidad del Valle de Guatemala (2023–presente)",
+    "focus": "Enfoque: Sistemas embebidos, robótica, electrónica, infraestructura Linux, aeroespacial"
+  },
+  "skills": {
+    "eyebrow": "Con Qué Trabajo",
+    "title": "Habilidades",
+    "intro": "Los lenguajes, plataformas y herramientas que realmente uso, agrupados por dónde aparecen en el trabajo. Las barras reflejan una autoevaluación de profundidad, no certificaciones.",
+    "categories": {
+      "programming": "Programación",
+      "embedded_systems": "Sistemas Embebidos",
+      "electronics": "Electrónica",
+      "automation": "Automatización",
+      "web_dev": "Desarrollo Web",
+      "ml_data": "ML y Datos",
+      "cybersecurity": "Ciberseguridad",
+      "linux_devops": "Linux y DevOps",
+      "engineering_tools": "Herramientas de Ingeniería"
+    }
+  },
+  "projects": {
+    "eyebrow": "La Lista Completa",
+    "title": "Proyectos",
+    "intro": "Todos los proyectos del portafolio: robótica, firmware embebido, investigación aeroespacial, infraestructura Linux y software full-stack.",
+    "filter_all": "Todos",
+    "view_details": "Ver detalles",
+    "github": "GitHub",
+    "demo": "Demo en vivo",
+    "back": "Volver a proyectos",
+    "not_found": "Proyecto no encontrado.",
+    "no_image": "Imagen próximamente",
+    "sections": {
+      "overview": "Resumen",
+      "problem": "Problema",
+      "requirements": "Requisitos",
+      "architecture": "Arquitectura",
+      "implementation": "Implementación",
+      "decisions": "Decisiones Clave",
+      "challenges": "Desafíos",
+      "testing_desc": "Pruebas",
+      "results": "Resultados",
+      "lessons": "Lecciones Aprendidas"
+    }
+  },
+  "certifications": {
+    "eyebrow": "Credenciales",
+    "title": "Certificaciones",
+    "intro": "Formación formal y reconocimientos que respaldan el trabajo práctico: redes, seguridad de redes, herramientas profesionales y premios del sector espacial.",
+    "issued": "Emitido",
+    "view_credential": "Ver credencial"
+  },
+  "contact": {
+    "eyebrow": "Hablemos",
+    "title": "Contacto",
+    "intro": "Me interesan oportunidades de ingeniería, software, investigación e I+D en sistemas embebidos, robótica, electrónica, automatización, aeroespacial, telecomunicaciones, infraestructura Linux y desarrollo full-stack, así como colaboraciones técnicas donde la integración multidisciplinaria de sistemas sea central.",
+    "name": "Nombre",
+    "email": "Correo",
+    "message": "Mensaje",
+    "send": "Enviar Mensaje",
+    "elsewhere_title": "Encuéntrame también en",
+    "elsewhere_body": "Para código fuente y documentación de proyectos, GitHub es el mejor lugar para ver lo que estoy construyendo. Para experiencia profesional, trabajo aeroespacial y premios, conecta conmigo en LinkedIn. Para consultas directas, el correo es lo más rápido.",
+    "sending": "Enviando…",
+    "success": "Gracias — tu mensaje va en camino.",
+    "error": "Algo salió mal y tu mensaje no se envió. Escríbeme directamente por correo.",
+    "error_rate_limited": "Enviaste un mensaje hace poco. Espera unos minutos antes de enviar otro."
+  },
+  "footer": {
+    "rights": "Todos los derechos reservados.",
+    "disclaimer": "Este servidor aún está en construcción y pronto migrará a infraestructura autoalojada, por lo que este enlace puede cambiar."
+  },
+  "not_found": {
+    "title": "Página no encontrada",
+    "body": "La página que buscas no existe.",
+    "home_link": "Volver al inicio"
+  },
+  "admin": {
+    "login": {
+      "title": "Acceso de Administrador",
+      "username": "Usuario",
+      "password": "Contraseña",
+      "submit": "Iniciar Sesión",
+      "invalid": "Usuario o contraseña incorrectos.",
+      "rate_limited": "Demasiados intentos. Intenta de nuevo en {{seconds}}s."
+    },
+    "nav_analytics": "Analíticas",
+    "nav_network": "Estado de la Red",
+    "dashboard": {
+      "title": "Panel de Analíticas",
+      "logout": "Cerrar Sesión",
+      "range_7": "7 días",
+      "range_30": "30 días",
+      "range_90": "90 días",
+      "stat_page_views": "Vistas de Página",
+      "stat_unique_sessions": "Sesiones Únicas",
+      "stat_project_views": "Vistas de Proyectos",
+      "stat_github_clicks": "Clics a GitHub",
+      "stat_cv_downloads": "Descargas de CV",
+      "stat_contact_clicks": "Clics de Contacto",
+      "chart_visits": "Visitas en el Tiempo",
+      "chart_top_projects": "Proyectos Más Vistos",
+      "chart_language": "Distribución de Idioma",
+      "recent_activity": "Actividad Reciente",
+      "demo_data_notice": "Mostrando datos de demostración — el seguimiento real de visitantes (M8) aún no está implementado.",
+      "no_recent_activity": "Sin actividad reciente."
+    },
+    "network_health": {
+      "title": "Estado de la Red",
+      "logout": "Cerrar Sesión",
+      "notice": "Muestreado por el servicio NOC independiente cada ~30 segundos.",
+      "no_data": "Aún no hay muestras — el servicio NOC empieza a sondear poco después de iniciar.",
+      "last_updated": "Última actualización",
+      "services_title": "Estado de Servicios",
+      "internet_title": "Alcance a Internet",
+      "resources_title": "Recursos del Servidor",
+      "traffic_title": "Solicitudes y Errores (por muestra)",
+      "status_up": "Activo",
+      "status_down": "Caído",
+      "status_degraded": "Degradado",
+      "packet_loss": "Pérdida de paquetes",
+      "cpu": "CPU",
+      "memory": "Memoria",
+      "disk": "Disco",
+      "requests": "Solicitudes",
+      "errors": "Errores",
+      "unreachable": "Inalcanzable"
+    }
+  }
+}

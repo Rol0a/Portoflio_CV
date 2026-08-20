@@ -1,0 +1,74 @@
+.PHONY: dev dev-build dev-down dev-logs backend-shell frontend-shell db-shell db-migrate db-migration db-seed test noc-role noc-role-prod preflight check-smtp prod-up prod-down prod-logs tunnel-status
+
+dev:
+	docker compose -f docker-compose.dev.yml up
+
+dev-build:
+	docker compose -f docker-compose.dev.yml up --build
+
+dev-down:
+	docker compose -f docker-compose.dev.yml down
+
+dev-logs:
+	docker compose -f docker-compose.dev.yml logs -f
+
+backend-shell:
+	docker compose -f docker-compose.dev.yml exec backend bash
+
+frontend-shell:
+	docker compose -f docker-compose.dev.yml exec frontend sh
+
+db-shell:
+	docker compose -f docker-compose.dev.yml exec postgres psql -U $${POSTGRES_USER:-portfolio} -d $${POSTGRES_DB:-portfolio}
+
+db-migrate:
+	docker compose -f docker-compose.dev.yml exec backend alembic upgrade head
+
+db-migration:
+	docker compose -f docker-compose.dev.yml exec backend alembic revision --autogenerate -m "$(m)"
+
+db-seed:
+	docker compose -f docker-compose.dev.yml exec backend python -m scripts.seed
+
+test:
+	docker compose -f docker-compose.dev.yml exec backend pytest
+	docker compose -f docker-compose.dev.yml exec frontend npm run test
+
+# Create (or rotate the password of) the least-privilege noc_writer role.
+# Idempotent — see scripts/create_noc_role.sql. Requires NOC_DB_PASSWORD.
+noc-role:
+	@test -n "$${NOC_DB_PASSWORD:-}" || { echo "NOC_DB_PASSWORD is not set (see .env.example)"; exit 1; }
+	docker compose -f docker-compose.dev.yml exec -T postgres psql -U $${POSTGRES_USER:-portfolio} -d $${POSTGRES_DB:-portfolio} \
+		-v noc_password="$$NOC_DB_PASSWORD" -v db_name=$${POSTGRES_DB:-portfolio} < scripts/create_noc_role.sql
+
+noc-role-prod:
+	@test -n "$${NOC_DB_PASSWORD:-}" || { echo "NOC_DB_PASSWORD is not set (see .env.example)"; exit 1; }
+	docker compose exec -T postgres psql -U $${POSTGRES_USER:-portfolio} -d $${POSTGRES_DB:-portfolio} \
+		-v noc_password="$$NOC_DB_PASSWORD" -v db_name=$${POSTGRES_DB:-portfolio} < scripts/create_noc_role.sql
+
+# --- Deployment (production stack; see docs/deployment.md) -------------------
+
+# Configuration and exposure checks. Run before every deploy.
+preflight:
+	./scripts/preflight.sh
+
+# Verify the contact relay's Gmail App Password without emailing anyone.
+# Add ARGS=--send to deliver one test message to CONTACT_TO_EMAIL.
+check-smtp:
+	docker compose exec -T backend python -m scripts.check_smtp $(ARGS)
+
+prod-up:
+	docker compose up -d
+	docker compose ps
+
+prod-down:
+	docker compose down
+
+prod-logs:
+	docker compose logs -f --tail=100
+
+# Is the tunnel actually connected? A dead tunnel means the site is offline
+# while every other service still looks healthy from inside the network.
+tunnel-status:
+	docker compose exec -T cloudflared cloudflared tunnel ready && echo "tunnel: READY"
+	docker compose ps cloudflared

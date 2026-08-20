@@ -1,0 +1,125 @@
+.header {
+  position: sticky;
+  top: 0;
+  background: rgba(248, 242, 239, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 0 var(--color-border);
+  z-index: 10;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .header {
+    background: rgba(18, 49, 56, 0.86);
+  }
+}
+
+:root[data-theme="dark"] .header {
+  background: rgba(18, 49, 56, 0.86);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--space-3);
+  gap: var(--space-3);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.menuToggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.menuIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.navList {
+  display: flex;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+/* Below this width the inline nav becomes a toggled dropdown panel instead
+   of wrapping onto multiple cramped lines — verified at the 375px check in
+   docs/frontend-design.md §8. */
+@media (max-width: 720px) {
+  .menuToggle {
+    display: inline-flex;
+  }
+
+  .nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 12px 24px rgba(var(--shadow-color), 0.08);
+  }
+
+  .nav.navOpen {
+    display: flex;
+  }
+
+  .navList {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .navList a {
+    display: block;
+  }
+}
+
+.navList a {
+  text-decoration: none;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  transition: background var(--duration-fast) var(--ease-cozy), color var(--duration-fast) var(--ease-cozy);
+}
+
+.navList a:hover {
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+}
+
+.navList a[aria-current="page"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
