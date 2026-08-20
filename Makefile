@@ -1,4 +1,4 @@
-.PHONY: dev dev-build dev-down dev-logs backend-shell frontend-shell db-shell db-migrate db-migration db-seed test noc-role noc-role-prod preflight harden harden-apply funnel funnel-status funnel-off check-smtp prod-up prod-down prod-logs tunnel-status
+.PHONY: dev dev-build dev-down dev-logs backend-shell frontend-shell db-shell db-migrate db-migration db-seed test noc-role noc-role-prod preflight harden harden-apply funnel funnel-status funnel-off renew-admin-cert check-smtp prod-up prod-down prod-logs tunnel-status
 
 dev:
 	docker compose -f docker-compose.dev.yml up
@@ -93,6 +93,13 @@ funnel-status:
 
 funnel-off:
 	tailscale funnel --https=443 off
+
+# Real TLS for the admin site (:8443) — see docs/SELF_HOSTING.md §6.1 for
+# why this exists (an HSTS/hostname interaction, not a preference). Runs
+# automatically monthly via the portfolio-cert-renew.timer systemd unit;
+# this is for running it by hand.
+renew-admin-cert:
+	./scripts/renew_admin_cert.sh
 
 # Cloudflare path — only meaningful under the `cloudflare` compose profile,
 # which is not the default. Kept for the day a real domain exists.

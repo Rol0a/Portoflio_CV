@@ -156,6 +156,11 @@ services:
       - ADMIN_ENTRY_TOKEN=${ADMIN_ENTRY_TOKEN:-admin}
     volumes:
       - ./infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Tailscale-issued TLS cert for the admin site — `tailscale cert`,
+      # renewed on a cron job (see docs/SELF_HOSTING.md §6). Not committed
+      # (.gitignore); regenerate with the command in that section if this
+      # directory is ever missing on a fresh host.
+      - ./infrastructure/caddy/certs:/etc/caddy/certs:ro
       - caddy_data:/data
       - caddy_config:/config
     healthcheck:

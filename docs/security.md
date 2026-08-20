@@ -396,13 +396,41 @@ is outbound-only.
 
 ## 5. TLS
 
-Unchanged from `architecture.md` §8/§11: Caddy provisions and renews
-certificates automatically via ACME/Let's Encrypt for the Tailscale-bound
-admin site block too (Caddy supports internal/self-signed certs for
-non-public names, or a real cert if the admin hostname is a subdomain
-that's DNS-validated but never proxied publicly — either works; the
-non-public reachability from §3 is what actually matters here, TLS is
-defense in depth on top of it).
+**Public site:** terminated by Tailscale at Funnel's ingress (§2) — Caddy's
+public block holds no certificate of its own; ACME can't run because 80/443
+are never publicly reachable at the router.
+
+**Admin site — corrected 2026-08-20, real state rather than the earlier
+aspiration.** This section originally described Caddy provisioning its own
+ACME certificate for the admin block; that was never actually implemented —
+the admin block ran plain HTTP, on the reasoning that WireGuard already
+encrypts the tailnet transport, so a second TLS layer seemed redundant.
+
+That reasoning had a real gap: the public block sends
+`Strict-Transport-Security` over genuine HTTPS for this exact hostname, and
+browser HSTS state is scoped to the *hostname*, not the port. Any browser
+that had visited the public site would silently upgrade its next request to
+the admin hostname — on `:8443`, any scheme — to HTTPS before sending it,
+producing `ERR_SSL_PROTOCOL_ERROR` against a server speaking plaintext. This
+surfaced as a real, live lockout, not a theoretical one.
+
+**The actual fix:** `tailscale cert` — Tailscale's own Let's Encrypt-backed
+issuance for tailnet hostnames, not Caddy's ACME — provisions a real
+certificate for the admin hostname, mounted read-only into the `caddy`
+container. The admin site block terminates genuine TLS with it
+(`infrastructure/caddy/Caddyfile`'s `https://:8443`). The cert is
+hostname-bound, so an IP-literal URL no longer works over HTTPS at all —
+only the intended path, `https://<tailnet-hostname>:8443`, does.
+
+Non-public reachability from §3 is still what actually matters — nothing
+above changes who can *reach* `:8443` at all, only what happens once a
+request that's already allowed through arrives. Renewal
+(`scripts/renew_admin_cert.sh`, a monthly `portfolio-cert-renew.timer`
+systemd unit) is covered in `docs/SELF_HOSTING.md` §6.1, including why
+`caddy reload` rather than `restart` keeps the public site from blipping on
+every renewal. `scripts/preflight.sh` checks the cert's real expiry and
+fails inside 14 days of it, so a broken renewal is caught before anyone is
+locked out.
 
 ## 6. Brute-Force and Intrusion Protection
 

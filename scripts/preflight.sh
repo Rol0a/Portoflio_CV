@@ -214,12 +214,38 @@ fi
 section "Reverse proxy"
 
 if command -v docker >/dev/null; then
+  # The admin block loads a real TLS cert from ./infrastructure/caddy/certs
+  # (`tailscale cert` — see docs/SELF_HOSTING.md §6). Validation needs the
+  # same mount the running caddy service has, or it fails on a missing file
+  # that exists in production and reports a false negative.
   if docker run --rm -e DOMAIN="${DOMAIN:-portfolio.example.com}" \
       -v "$PWD/infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+      -v "$PWD/infrastructure/caddy/certs:/etc/caddy/certs:ro" \
       caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&1; then
     pass "Caddyfile validates"
   else
     fail "Caddyfile does not validate"
+  fi
+
+  if [[ -f infrastructure/caddy/certs/admin.crt ]]; then
+    expiry=$(docker run --rm -v "$PWD/infrastructure/caddy/certs:/certs:ro" \
+      alpine/openssl x509 -in /certs/admin.crt -noout -enddate 2>/dev/null | cut -d= -f2)
+    if [[ -n "$expiry" ]]; then
+      expiry_epoch=$(date -d "$expiry" +%s 2>/dev/null)
+      now_epoch=$(date +%s)
+      days_left=$(( (expiry_epoch - now_epoch) / 86400 ))
+      if [[ $days_left -lt 0 ]]; then
+        fail "admin TLS cert EXPIRED ${days_left#-} days ago — HTTPS admin access is broken. Renew: docs/SELF_HOSTING.md §6"
+      elif [[ $days_left -lt 14 ]]; then
+        warn "admin TLS cert expires in $days_left days — confirm the renewal cron is actually running"
+      else
+        pass "admin TLS cert valid for $days_left more days"
+      fi
+    else
+      warn "could not read admin cert expiry"
+    fi
+  else
+    fail "infrastructure/caddy/certs/admin.crt is missing — the admin site's TLS will fail. Issue one: docs/SELF_HOSTING.md §6"
   fi
 fi
 

@@ -341,13 +341,73 @@ this project.
 From any device logged into the same Tailscale account:
 
 ```
-http://roloa.tailb961fd.ts.net:8443
+https://roloa.tailb961fd.ts.net:8443/admin
 ```
 
-(or the raw tailnet IP — `http://100.124.209.87:8443`; MagicDNS just gives
-the name a friendlier form). Plain `http://`, not `https://` — this is
-correct: WireGuard already encrypts the tailnet transport, so Caddy's admin
-block deliberately doesn't hold its own TLS certificate for it.
+**The `/admin` path matters, not just the hostname and port.** The `caddy`
+service proxies the *same* `frontend` container on both the public and admin
+site blocks — there is one React SPA (`frontend/src/App.tsx`), not a
+separate admin deployment. `path="index"` (`/`) renders the public homepage;
+`path="admin"` renders the login screen; `admin/dashboard` and
+`admin/network-health` (lazy-loaded, so their ~450kB `recharts` dependency
+never ships in the public bundle) come after logging in. The bare hostname
+with no path loads `/`, i.e. the public homepage — that's correct behaviour
+for that path, not a routing bug, and it's what you'll see if you leave
+`/admin` off.
+
+The two Caddy blocks differ only in which *paths* they let through: the
+public block explicitly `respond 404`s `/admin*` so an outside visitor can't
+even discover the route exists (verified: `https://<hostname>/admin` on the
+public/Funnel path stays 404), while the admin block has no such rule, so
+`/admin*` reaches the SPA and the login screen renders.
+
+**Must be the hostname, over HTTPS — not the raw IP, and not `http://`.**
+Both of those used to work and no longer do, on purpose. What happened, and
+why the fix landed the way it did:
+
+The admin block originally ran plain HTTP, reasoning that WireGuard already
+encrypts the tailnet transport so a second layer of TLS was redundant. That
+reasoning missed one thing: the **public** site block sends
+`Strict-Transport-Security` over real HTTPS for this exact hostname. Browser
+HSTS state is scoped to the *hostname*, not the port — once a browser has
+seen that header for `roloa.tailb961fd.ts.net` on `:443`, it silently
+upgrades any later request to that hostname, on any port, to HTTPS before
+sending it. The moment anyone had also visited the public site, plain HTTP
+on `:8443` broke: the browser sent a TLS handshake to a server speaking
+plaintext, producing `ERR_SSL_PROTOCOL_ERROR`.
+
+**The fix is a real cert, not a workaround.** `tailscale cert` issues a
+genuine Let's Encrypt certificate for this node's tailnet hostname — this
+tailnet already has HTTPS Certificates enabled, so it just works:
+
+```bash
+sudo tailscale cert \
+  --cert-file infrastructure/caddy/certs/admin.crt \
+  --key-file infrastructure/caddy/certs/admin.key \
+  roloa.tailb961fd.ts.net
+```
+
+Caddy's admin block now terminates real TLS with it
+(`infrastructure/caddy/Caddyfile`'s `https://:8443` block), mounted in via
+`docker-compose.yml`. The cert is **hostname-bound**, which is why the raw
+IP (`https://100.124.209.87:8443`) fails certificate validation now — that
+was only ever a stopgap (HSTS never applies to IP literals, so it sidestepped
+the browser bug, but it wasn't the actual fix). Use the hostname.
+
+**Renewal is automatic.** Tailscale certs are ~90 days.
+`scripts/renew_admin_cert.sh` re-issues and reloads Caddy with zero downtime
+(`caddy reload`, not `restart`), run monthly by the
+`portfolio-cert-renew.timer` systemd timer:
+
+```bash
+systemctl list-timers portfolio-cert-renew.timer   # when it next fires
+sudo systemctl status portfolio-cert-renew.service  # last run's result
+./scripts/renew_admin_cert.sh                       # run it by hand
+```
+
+`make preflight` checks the cert's actual expiry on every run and fails if
+it's already expired or within 14 days, so a broken renewal shows up before
+it locks anyone out.
 
 Log in with `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env`. A row already
 exists in `admin_users`, seeded via `make db-seed` → `scripts/seed.py`.

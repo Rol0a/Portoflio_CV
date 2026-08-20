@@ -8,6 +8,11 @@
 *.pem
 *.key
 
+# Tailscale-issued TLS cert for the admin site (:8443). *.key above already
+# covers the private key; the directory is excluded wholesale for clarity —
+# see docs/security.md §5 and SELF_HOSTING.md §6.
+infrastructure/caddy/certs/
+
 # Stray SSH keypair found untracked in repo root (2026-08-19) — filename has
 # no extension so *.key above doesn't catch it. Not the key ~/.ssh/config
 # actually uses for origin (different fingerprint); provenance unconfirmed.

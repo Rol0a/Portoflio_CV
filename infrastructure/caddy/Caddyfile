@@ -193,16 +193,37 @@ http://{$DOMAIN} {
 }
 
 # --- Admin site -----------------------------------------------------------
-# Plain HTTP on :8443, which is safe ONLY because docker-compose.yml
-# publishes it as "${TAILSCALE_IP}:8443:8443" — bound to the host's Tailscale
-# address, so it is unreachable from the LAN, the WAN, and the tunnel alike.
-# Traffic to it is already encrypted by WireGuard.
+# HTTPS on :8443, using a real Tailscale-issued cert (`tailscale cert`,
+# Let's Encrypt-backed) for this node's tailnet hostname. Reachability is
+# still bounded by docker-compose.yml publishing this port as
+# "${TAILSCALE_IP}:8443:8443" — bound to the host's Tailscale address, so it
+# is unreachable from the LAN, the WAN, and the tunnel alike; the cert is
+# defence in depth on top of that, not a substitute for it.
 #
-# (docs/security.md §3 sketched `bind tailscale0` instead. That cannot work
-# from inside a container: the host's tailscale0 interface does not exist in
-# the container's network namespace. Binding the published port to the
-# Tailscale IP achieves the same restriction and needs no host networking.)
-http://:8443 {
+# **Why this exists, when WireGuard already encrypts the transport:** the
+# public site block (below) sends `Strict-Transport-Security` over real HTTPS
+# for this exact hostname. Browser HSTS state is scoped to the HOSTNAME, not
+# the port — once a browser has seen that header for roloa.tailb961fd.ts.net
+# on :443, it silently upgrades ANY future request to that hostname, on ANY
+# port, to HTTPS before sending it. Plain HTTP on :8443 (the original design)
+# broke the moment anyone had also visited the public site: the browser
+# sent a TLS handshake to a server speaking plaintext HTTP, producing
+# ERR_SSL_PROTOCOL_ERROR. Real TLS here is the actual fix, not a workaround —
+# an IP-literal URL (http://100.x.y.z:8443) sidesteps it too, since HSTS
+# never applies to IP literals, but that's a fallback, not the fix.
+#
+# **Renewal:** Tailscale certs are ~90 days (see the cron entry this change
+# adds — docs/SELF_HOSTING.md §6). If the cert has expired and nobody has
+# renewed it, the browser again refuses the connection — the IP-literal
+# fallback above still works regardless of cert state.
+#
+# (docs/security.md §3 originally sketched `bind tailscale0` for plain HTTP.
+# That cannot work from inside a container: the host's tailscale0 interface
+# does not exist in the container's network namespace. Binding the published
+# port to the Tailscale IP achieves the same restriction and needs no host
+# networking — this cert layers real TLS on top of it.)
+https://:8443 {
+	tls /etc/caddy/certs/admin.crt /etc/caddy/certs/admin.key
 	import security_headers
 	encode zstd gzip
 
