@@ -10,6 +10,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.config import settings
 from app.database import async_session_factory, engine
+from app.middleware.exposure import ExposureGuardMiddleware
 from app.middleware.metrics import MetricsMiddleware
 from app.routes import (
     admin,
@@ -79,12 +80,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Inside MetricsMiddleware (added below), so a refusal still increments the
+# request counter the NOC dashboard watches — a burst of guard denials is
+# exactly the kind of thing that should be visible as traffic, not swallowed.
+# See app/middleware/exposure.py for why the backend enforces this at all when
+# the Caddyfile already does.
+app.add_middleware(ExposureGuardMiddleware, admin_entry=settings.admin_entry_token or None)
 app.add_middleware(MetricsMiddleware)
 
 # Added last, so it sits outermost: every other middleware and route below it
 # then reads an already-corrected client IP. See app/middleware/proxy.py for
 # why this is wired here rather than via uvicorn's --proxy-headers flag.
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=settings.trusted_proxies)
+
+if not settings.admin_entry_token:
+    logger.warning(
+        "ADMIN_ENTRY_TOKEN is unset — the exposure guard falls back to the literal "
+        "marker 'admin' (app/middleware/exposure.py). That still catches a Caddy "
+        "misconfiguration, but not an attacker who already reaches this backend "
+        "directly. Set it in .env: openssl rand -hex 32"
+    )
 
 if "*" in settings.trusted_proxies:
     logger.warning(

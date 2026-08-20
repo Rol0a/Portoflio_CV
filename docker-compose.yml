@@ -132,9 +132,28 @@ services:
     # Docker network. Only the admin site is published, and only on the host's
     # Tailscale address, so it is unreachable from the LAN and the internet.
     ports:
+      # Admin site — the host's Tailscale address ONLY, so it is unreachable
+      # from the LAN, the WAN, and the public ingress alike.
       - "${TAILSCALE_IP}:8443:8443"
+      # Public site — bound to host LOOPBACK only, so nothing on the LAN or the
+      # internet can reach it directly. This exists solely so `tailscale
+      # funnel` (which runs on the host, outside Docker) has something to
+      # forward to; Funnel is what makes the site public, not this binding.
+      #
+      # 127.0.0.1 is load-bearing: "8080:80" would bind 0.0.0.0 and put the
+      # whole site on the home LAN unauthenticated. scripts/preflight.sh
+      # enforces that every published port is either the tailnet address or
+      # loopback, and fails on anything else.
+      - "127.0.0.1:8080:80"
     environment:
       - DOMAIN=${DOMAIN}
+      # Stamped onto admin-block requests as X-Portfolio-Entry, and checked by
+      # the backend's exposure guard (backend/app/middleware/exposure.py). The
+      # backend reads the same variable from .env via env_file, so the two
+      # sides cannot drift. The `:-admin` default matches the guard's own
+      # fallback, so an unset value degrades to the documented weaker mode
+      # rather than locking the admin dashboard out.
+      - ADMIN_ENTRY_TOKEN=${ADMIN_ENTRY_TOKEN:-admin}
     volumes:
       - ./infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -172,6 +191,17 @@ services:
   # is why it is monitored rather than merely restarted.
   cloudflared:
     <<: *default-hardening
+    # Profile-gated, so a bare `docker compose up -d` does NOT start it. This
+    # deployment serves the public site over Tailscale Funnel instead (no
+    # domain required, no Cloudflare account required — docs/security.md §2).
+    #
+    # Without the profile this service starts with an empty TUNNEL_TOKEN and
+    # crashloops on every boot, because portfolio-stack.service runs
+    # `docker compose up -d` unconditionally. Kept rather than deleted: it is
+    # the ready-made path if a real domain is ever registered.
+    #
+    # To use it:  docker compose --profile cloudflare up -d
+    profiles: ["cloudflare"]
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run
     environment:
@@ -222,7 +252,11 @@ services:
       # Tunnel health on the Network Health dashboard. Without this a tunnel
       # outage looks like a fully healthy stack from inside the network, while
       # the site is unreachable from the internet.
-      - NOC_CLOUDFLARED_URL=http://cloudflared:2000/ready
+      # Empty by default, because cloudflared is profile-gated above. When it
+      # is empty the NOC skips the check rather than reporting a permanently
+      # "down" service, which would make the Network Health dashboard cry wolf
+      # on every sample. Set it only when running the cloudflare profile.
+      - NOC_CLOUDFLARED_URL=${NOC_CLOUDFLARED_URL:-}
       # Least-privilege credential (M16) — INSERT/DELETE on
       # network_health_samples and nothing else. Provisioned once by
       # `make noc-role-prod` (scripts/create_noc_role.sql). Without this the

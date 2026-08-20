@@ -6,7 +6,12 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    # This repo's default branch is `main`. It previously read `master`, so
+    # every direct push to main ran zero CI — silently, because a workflow
+    # whose trigger never matches reports no failure. `pull_request` was
+    # unaffected (it fires regardless of base branch name), which is exactly
+    # why the gap survived: PRs looked covered while direct pushes were not.
+    branches: [main]
   pull_request:
 
 concurrency:

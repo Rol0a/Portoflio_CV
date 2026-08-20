@@ -1,4 +1,4 @@
-.PHONY: dev dev-build dev-down dev-logs backend-shell frontend-shell db-shell db-migrate db-migration db-seed test noc-role noc-role-prod preflight check-smtp prod-up prod-down prod-logs tunnel-status
+.PHONY: dev dev-build dev-down dev-logs backend-shell frontend-shell db-shell db-migrate db-migration db-seed test noc-role noc-role-prod preflight harden harden-apply funnel funnel-status funnel-off check-smtp prod-up prod-down prod-logs tunnel-status
 
 dev:
 	docker compose -f docker-compose.dev.yml up
@@ -52,6 +52,15 @@ noc-role-prod:
 preflight:
 	./scripts/preflight.sh
 
+# Show what host hardening (docs/security.md §4, §6) would change. Read-only.
+harden:
+	./scripts/harden_host.sh
+
+# Apply it. Prompts before removing any SSH rule, because one of them may be
+# the rule your current session is using — reconnect over Tailscale after.
+harden-apply:
+	./scripts/harden_host.sh --apply
+
 # Verify the contact relay's Gmail App Password without emailing anyone.
 # Add ARGS=--send to deliver one test message to CONTACT_TO_EMAIL.
 check-smtp:
@@ -67,8 +76,26 @@ prod-down:
 prod-logs:
 	docker compose logs -f --tail=100
 
-# Is the tunnel actually connected? A dead tunnel means the site is offline
-# while every other service still looks healthy from inside the network.
+# --- Public ingress (Tailscale Funnel) --------------------------------------
+# Funnel is the public path: free, no domain, outbound-only, home IP never
+# published. It forwards to Caddy's public block, which docker-compose.yml
+# publishes on loopback only. See docs/security.md §2.
+#
+# ONLY ever 443. Funnel also supports 8443, which is the admin site's port —
+# funnelling that would publish the admin dashboard to the internet.
+# scripts/preflight.sh fails loudly if that ever happens.
+funnel:
+	tailscale funnel --bg --https=443 http://127.0.0.1:8080
+	@$(MAKE) --no-print-directory funnel-status
+
+funnel-status:
+	@tailscale funnel status
+
+funnel-off:
+	tailscale funnel --https=443 off
+
+# Cloudflare path — only meaningful under the `cloudflare` compose profile,
+# which is not the default. Kept for the day a real domain exists.
 tunnel-status:
 	docker compose exec -T cloudflared cloudflared tunnel ready && echo "tunnel: READY"
 	docker compose ps cloudflared

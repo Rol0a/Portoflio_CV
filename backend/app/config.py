@@ -43,6 +43,18 @@ class Settings(BaseSettings):
     smtp_password: str = ""  # Gmail: an App Password, never the account password
     smtp_from: str = ""  # defaults to smtp_username
 
+    # Shared secret proving a request entered through Caddy's Tailscale-bound
+    # admin site block rather than the public one — the second lock behind the
+    # Caddyfile's own deny rules (app/middleware/exposure.py). Caddy stamps it
+    # as X-Portfolio-Entry; the backend refuses proxied admin/auth requests
+    # that do not carry it.
+    #
+    # Optional. Left empty, the marker falls back to the literal "admin",
+    # which still catches a Caddy misconfiguration but is guessable by anyone
+    # who has already bypassed Caddy entirely. Startup logs a warning saying
+    # so, rather than degrading silently. Generate with: openssl rand -hex 32
+    admin_entry_token: str = ""
+
     admin_username: str = "admin"
     admin_password: str = "changeme"
 

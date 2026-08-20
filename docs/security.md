@@ -61,70 +61,106 @@ is the starting point for any direct network attack. The goal isn't just
 "don't get hacked" — it's **never let a visitor's browser, DNS record, or
 HTTP response reveal the home network's real IP address at all.**
 
-### Chosen strategy: Cloudflare Tunnel
+### Chosen strategy: Tailscale Funnel
 
-`cloudflared` (Cloudflare's tunnel client) is **Apache-2.0 licensed and
-open source** — its source is auditable, and it's what makes this the one
-deliberate exception to "self-hosted only" in this document: the client is
-open source, but traffic relays through Cloudflare's infrastructure, which
-is closed and third-party. That trade-off was chosen deliberately over the
-alternative (renting a VPS as a self-hosted relay) because:
+**Decided 2026-08-20, replacing Cloudflare Tunnel.** The deciding constraint
+was not technical: this deployment must cost nothing, and a Cloudflare *named*
+tunnel requires a DNS zone, which requires buying a domain. A Cloudflare
+*quick* tunnel needs no domain but hands out a new random
+`*.trycloudflare.com` hostname on every restart, with no uptime guarantee —
+unusable for a CV that people are meant to be able to return to.
 
-- It requires no inbound ports at all — `cloudflared` makes an **outbound**
-  connection from the home server to Cloudflare's edge and holds it open.
-  There is nothing for a port scanner to find, because nothing is
-  listening on the public internet at the home network's IP.
-- DNS for the public hostname points at Cloudflare's proxy IPs (the
-  "orange cloud" state in Cloudflare DNS), never at the home IP. A visitor
-  resolving the domain, or running `dig`/`whois` against it, sees
-  Cloudflare — never the home network.
-- It's free for this traffic volume and doesn't require running or paying
-  for a separate always-on VPS.
-
-If cost/trust trade-offs change later, `architecture.md` §11's "Strategy C:
-Tailscale Funnel" is a drop-in alternative with the same shape (open-source
-client — Tailscale's client is BSD-3, built on the fully open-source
-WireGuard protocol — relayed through Tailscale's infrastructure when direct
-peer-to-peer isn't possible through CGNAT).
-
-### Setup shape
+**Tailscale Funnel** (BSD-3 client, WireGuard-based) gives a stable public
+HTTPS hostname for free, with no domain and no account beyond the Tailscale
+one already in use for admin access (§3):
 
 ```
-Home server (Docker host)
-    │
-    │ outbound-only, encrypted, no inbound port ever opened
+https://roloa.tailb961fd.ts.net
+```
+
+It keeps every property that made Cloudflare Tunnel the original choice:
+
+- **No inbound port, ever.** `tailscaled` holds an outbound connection to
+  Tailscale's ingress. Nothing listens on the home IP, so there is nothing for
+  a port scanner to find, and CGNAT (§1) is irrelevant.
+- **The home IP is never published.** The public hostname resolves to
+  Tailscale's ingress addresses (`199.38.181.54`, `209.177.145.137` at time of
+  writing), never to this network. Confirmed by resolving the name against a
+  public resolver rather than MagicDNS — from inside the tailnet the same name
+  resolves to `100.x.y.z`, which is why local `dig` output proves nothing here.
+- **Valid public TLS**, provisioned automatically by Tailscale via Let's
+  Encrypt. Verified: `curl` reports `ssl_verify_result: 0`.
+
+The trade-off is the same shape as before and worth stating plainly: traffic
+relays through Tailscale's infrastructure, so they are a trusted intermediary
+exactly as Cloudflare would have been. The client is open source; the relay is
+not self-hosted. Given the alternative is paying for a domain or an
+always-on VPS, this is the deliberate choice — and `architecture.md` §11
+already listed it as Strategy C.
+
+### The one configuration that would undo all of this
+
+Funnel can serve **443, 8443, or 10000**. The admin site (§3) is bound to
+**8443**. Funnelling 8443 would publish the admin dashboard to the open
+internet while every other control in this document remained perfectly intact
+and completely irrelevant.
+
+`scripts/preflight.sh` fails loudly if Funnel is ever serving anything but
+443. Turn a mistake off with:
+
+```bash
+tailscale funnel --https=8443 off
+```
+
+### How the public path fits together
+
+```
+Visitor
+    │  HTTPS (TLS terminated by Tailscale's ingress)
     ▼
-Cloudflare edge  ──(DNS: proxied "orange-cloud" A/AAAA record)──  Visitor
+Tailscale Funnel ingress  ── no inbound port opened at the home network ──
     │
-    ▼ (ingress rule inside the tunnel config)
-http://caddy:80  (same docker network as the app containers)
+    ▼  tailscaled on the host, outbound connection held open
+127.0.0.1:8080            ← Caddy's public block, published to host LOOPBACK
+    │                       ONLY (docker-compose.yml). "8080:80" would bind
+    │                       0.0.0.0 and put the whole site on the home LAN.
+    ▼
+caddy :80  (public site block, matches on $DOMAIN)
+    │
+    ├── /api/*  → backend:8000
+    └── else    → frontend:80
 ```
 
-`cloudflared` runs as its own container on the existing `portfolio-net`
-Docker network (or on the host directly — the container form keeps it
-alongside everything else this project already manages with Compose):
+Admin traffic never touches this path at all: it goes tailnet → `:8443`,
+published only on the host's Tailscale address (§3).
 
-```yaml
-# docker-compose.yml (production) — illustrative, fill in the tunnel token
-# from the Cloudflare Zero Trust dashboard (Networks → Tunnels), stored in
-# .env like every other secret, never committed.
-cloudflared:
-  image: cloudflare/cloudflared:latest
-  command: tunnel run
-  environment:
-    - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-  networks:
-    - portfolio-net
-  restart: unless-stopped
+```bash
+make funnel         # enable (443 → 127.0.0.1:8080)
+make funnel-status  # what is published right now
+make funnel-off     # take the site off the internet
 ```
 
-The tunnel's ingress rule points at `http://caddy:80` — plain HTTP is fine
-for that one hop because it never leaves the Docker network, and the
-tunnel connection itself (host → Cloudflare edge) is already encrypted.
-Cloudflare terminates public TLS at its edge; Caddy can also hold its own
-certificate and the tunnel can be configured for "Full (strict)" mode for
-defense-in-depth (TLS end-to-end even inside the host), but that's an
-optional hardening step, not required for the IP-hiding property itself.
+Funnel config is stored in `tailscaled`'s state, not in memory: verified by
+restarting `tailscaled` and confirming Funnel came back on its own. With
+`tailscaled` enabled at boot and `portfolio-stack.service` bringing the stack
+up (`docs/deployment.md` §1.5), the site restores itself after a reboot with
+no manual step.
+
+### What Funnel does and does not rewrite
+
+Determined empirically against the live public ingress, not assumed — this
+governs §9's client-IP handling and §3.1's exposure guard, so guessing was not
+an option:
+
+| Header | Behaviour | Consequence |
+|---|---|---|
+| `X-Forwarded-For` | **Overwritten** with the real client IP. A request forging `1.2.3.4` arrived carrying the true address. | Trustworthy. This is what analytics and login throttling key on. |
+| `Tailscale-Funnel-Request` | **Overwritten** to `?1` on every public request. A client sending `?0` had it corrected. | Un-forgeable proof a request came from the public internet — used as the outermost rule in §3.1. |
+| Anything else (e.g. `X-Portfolio-Entry`) | **Passed through untouched.** | Any header the backend trusts must be overwritten at the Caddy boundary. It is. |
+
+The last row is the one that bites: Funnel is not a header sanitiser. The
+public Caddy block's `header_up X-Portfolio-Entry public` is what makes that
+safe, and it must never be softened into a conditional.
 
 ### The IPv6 leak to watch for
 
@@ -234,6 +270,69 @@ Tailscale interface (or firewall it to only accept connections from the
 `100.64.0.0/10` Tailscale range) instead of leaving port 22 reachable from
 the LAN/WAN at all.
 
+### 3.1 The backend enforces this too, independently of Caddy
+
+Everything above is one control in one file. If a `handle` block is dropped
+from the Caddyfile, or the tunnel's ingress rule is repointed straight at
+`backend:8000` to rule out the proxy while debugging, or the stack comes up
+without the `caddy` service, then nothing above is enforcing anything — and
+the failure is silent, because the site keeps working.
+
+`backend/app/middleware/exposure.py` is the second lock, so the layers have
+to fail together. Its rules are deliberately of different kinds:
+
+0. **Anything Tailscale marks as a public Funnel request is refused outright
+   on every non-public surface.** Tailscale sets
+   `Tailscale-Funnel-Request: ?1` on ingress and overwrites any
+   client-supplied value (§2's table), so a visitor can neither forge it nor
+   strip it. This is the strongest signal available here because it is the
+   only one this project does not generate itself — it holds even when the
+   Caddyfile is wrong, absent, or bypassed, which is exactly when the other
+   two stop being trustworthy. A correct admin entry marker does **not**
+   override it.
+1. **`/internal/*` is for unproxied, in-network callers only.** The `noc`
+   service reaches it as `http://backend:8000/internal/metrics` over the
+   Docker network, so a legitimate request carries no `X-Forwarded-For`;
+   anything that passed through any proxy has one. No shared secret, no
+   knowledge of Caddy's address — it keys on a structural property of the
+   only supported call path.
+2. **Admin and auth surfaces require proof of admin entry, on any request
+   that was proxied at all.** Caddy's admin block stamps `X-Portfolio-Entry`
+   with the expected value; the public block stamps `public`. Both *set* the
+   header, so a value a visitor supplies is overwritten and cannot survive
+   the public path.
+
+   The rule is "proxied and not marked admin → refuse", not "marked public →
+   refuse", specifically so it also covers the bypass case: a request from a
+   repointed tunnel has an `X-Forwarded-For` (cloudflared adds one) and no
+   marker at all. An *unproxied* request has neither header and is allowed —
+   that is dev, the test suite, and direct in-network calls, none of which can
+   originate from the internet given `docker-compose.yml` publishes no port
+   for the backend.
+
+`ADMIN_ENTRY_TOKEN` upgrades the marker from a known constant to a shared
+secret; without it both sides fall back to the literal `admin`, which still
+catches a Caddy misconfiguration but is guessable by an attacker already past
+Caddy. The backend logs a warning when running on that fallback rather than
+degrading silently — the same pattern §7's NOC credential uses.
+
+Both rules answer `404`, matching Caddy, so neither confirms the path exists.
+
+One limit worth stating plainly: the guard only sees requests that reach the
+*backend*. `/admin*` in the public block falls through to the frontend
+container's nginx, not the backend, so if that deny rule were removed the SPA
+shell itself would be served publicly. That is inert — every API call it makes
+goes to `/api/v1/auth/*` or `/api/v1/admin/*`, which the guard does refuse — but
+"the admin page cannot be loaded from the internet" is a property of the
+Caddyfile alone, while "the admin page cannot *do* anything from the internet"
+is enforced twice.
+
+`backend/tests/test_exposure_guard.py` covers this by speaking ASGI directly
+to the middleware — deliberately not through Caddy, since bypassing Caddy is
+the situation the guard exists for. `scripts/preflight.sh` checks that both
+halves (the Caddy stamps and the backend wiring) are present, because a check
+that only looked at one would report a single point of failure as healthy.
+
 ## 4. Firewall
 
 `ufw` (Ubuntu/Debian's first-party firewall front-end for `nftables`/
@@ -261,6 +360,39 @@ Notice **80 and 443 are never opened** — because `cloudflared` makes an
 outbound connection, the host never needs to accept inbound traffic on
 those ports at all. This is a stronger position than the direct
 port-forwarding path in `architecture.md` §11 would have been.
+
+### 4.1 What this host actually looks like right now
+
+The rules above are the target state, not a description. Audited on
+2026-08-20, `ufw` on this host is active with `default deny (incoming)` and
+does **not** open 80/443 — but SSH is allowed from *anywhere*, on both IPv4
+and IPv6:
+
+```
+22/tcp (SSH)               ALLOW IN    Anywhere
+22/tcp (SSH (v6))          ALLOW IN    Anywhere (v6)
+```
+
+That is every device on the home LAN, including anything that joins it
+later, rather than the tailnet-only access this section specifies.
+`fail2ban` is not installed either. `scripts/preflight.sh` now fails on both
+rather than only checking 80/443, so neither can drift back unnoticed.
+
+`scripts/harden_host.sh` applies this section (and §6) for real. It is a
+dry run by default — `make harden` prints the plan and changes nothing;
+`make harden-apply` acts. It adds the `tailscale0` rules *before* deleting
+the permissive ones, so there is never a window with no SSH rule, refuses to
+run at all if Tailscale is down (removing the open rule with no tailnet would
+leave no way back in), prompts before each deletion, and re-reads `ufw
+status` afterwards to verify rather than assume.
+
+**WSL2 caveat.** `systemd-detect-virt` reports `wsl`, so `ufw` here filters
+the Linux distro only. Inbound LAN traffic reaches WSL2 through the Windows
+host's NAT and the *Windows* firewall, which none of this configures. These
+rules harden the server VM; they are not the outer perimeter. The outer
+perimeter is that nothing is port-forwarded (CGNAT makes inbound IPv4
+impossible upstream regardless — see `docs/CLAUDE.md` §2) and that the tunnel
+is outbound-only.
 
 ## 5. TLS
 
@@ -297,6 +429,15 @@ maxretry = 5
 findtime = 900
 bantime = 3600
 ```
+
+`scripts/harden_host.sh` installs and enables this, with `ignoreip` covering
+the tailnet (`100.64.0.0/10`) so a mistyped password from the admin's own
+laptop cannot lock them out of their own server.
+
+Note the layering: with §3, §3.1 and §4 in place, fail2ban is the *third*
+control on the admin login path, not the first. That is deliberate — it is
+the only one of the three that reacts to a sustained campaign rather than
+refusing each request in isolation.
 
 **CrowdSec** (MIT-licensed) is a reasonable upgrade path later — same
 job as fail2ban plus community-sourced blocklist enrichment and a
@@ -410,18 +551,94 @@ setup in §2:
      `TRUSTED_PROXY_IPS` fails closed (headers ignored, peer address used)
      rather than letting any client spoof its own IP. `TRUSTED_PROXY_IPS=*`
      is never correct on a public deployment and logs a startup warning.
-  2. **Caddy — still open.** Caddy must be configured with
-     `trusted_proxies` for Cloudflare's published ranges so it reads
-     `CF-Connecting-IP` and passes it on as `X-Forwarded-For`. Until the
-     Caddyfile exists (see §7's note that `infrastructure/` is still
-     empty), the backend half above is correctly wired but has nothing
-     upstream feeding it a real visitor address.
+  2. **Caddy — done, and rewired for Funnel (2026-08-20).** The public
+     block pins `X-Forwarded-For` to the value Tailscale Funnel already set:
+
+     ```caddyfile
+     header_up X-Forwarded-For {http.request.header.X-Forwarded-For}
+     ```
+
+     Two things make this correct rather than circular:
+
+     - Funnel **overwrites** `X-Forwarded-For` with the real client address
+       before the request reaches this host (§2's table — verified against the
+       live ingress, not assumed), so the incoming value cannot be spoofed by
+       the visitor.
+     - Pinning it, rather than letting `reverse_proxy` append this hop, is
+       what keeps it usable. Caddy would otherwise forward
+       `<visitor>, <docker-gateway>`, and the backend's
+       `ProxyHeadersMiddleware` trusts only Caddy's own `172.20.0.10` — so it
+       would resolve the *gateway* as the client and collapse every visitor to
+       a single address. That is precisely the bug this section exists to
+       prevent, reintroduced by an apparently harmless default.
+
+     The previous value was `{http.request.header.CF-Connecting-IP}`, correct
+     for Cloudflare and **empty under Funnel**. Leaving it would have silently
+     broken unique-visitor analytics and turned per-IP login throttling into
+     one global allowance — with no error anywhere.
+
+     **Verified end to end**, not inferred: an event posted through the public
+     Funnel ingress stored an `ip_hash` equal to
+     `sha256("<real client IP>:<date>:<secret>")`, and *not* the hash of the
+     Docker gateway or of the Caddy container.
 - **Access logs are sensitive too.** Caddy's default access log includes
   the (now-correct, per above) visitor IP in plaintext on disk. Keep log
   file permissions restrictive (`chmod 640`, owned by a dedicated
   non-login user) and rotate/expire them on the same cadence as the
   analytics retention policy (`architecture.md` §9: 90 days) rather than
   keeping raw IP-bearing logs indefinitely.
+
+### 9.1 The endpoint only accepts performance data — enforced, not assumed
+
+`POST /api/v1/analytics/events` is unauthenticated and public; that is what a
+beacon is. Its `metadata` field was a bare `dict`, so whatever anyone sent was
+written verbatim into a JSONB column — on a site whose documentation promises
+it stores no personal data. Anyone with `curl` could have posted
+`{"email": "...", "message": "..."}` and had it persisted indefinitely.
+
+`test_analytics_privacy.py` asserted the stored shape was `{"path"}`, but only
+for rows the test itself constructed, so it could never have caught this. The
+promise was real; the enforcement was not.
+
+`backend/app/schemas/analytics.py` now enforces it at the wire boundary, as an
+**allowlist rather than a blocklist**:
+
+| Field | Accepted | Everything else |
+|---|---|---|
+| `metadata.path` | a route path, query string and fragment stripped first | dropped |
+| `metadata.from` / `.to` | a short locale code | dropped |
+| `metadata.link` | a short lowercase token our own code chose | dropped |
+| `session_id` | 8–128 chars of `[A-Za-z0-9_-]` — no spaces, no `@`, no `.` | blanked, so the event is ignored |
+| `project_slug` | a slug | dropped |
+
+Adding a new tracked dimension therefore requires editing that file, which is
+exactly the review checkpoint this commitment needs.
+
+Two details that matter more than they look:
+
+- **Query strings are stripped, not rejected.** `/contact?email=someone@…`
+  is an ordinary URL, and storing the path verbatim would store the address
+  without anyone intending it. The navigation still counts as a view of
+  `/contact`; the parameters never reach the database.
+- **Nothing surviving is stored as `NULL`, not `{}`.** A scrubbed event is
+  indistinguishable from one that never carried metadata — no empty object
+  left behind as a marker that something was removed.
+
+Sanitising rather than rejecting is deliberate: a beacon cannot react to a
+4xx, so a hard `422` would turn a stray field into lost measurement. Dropping
+the offending key keeps the countable part, which is the only part that was
+ever wanted.
+
+`backend/tests/test_analytics_input_policy.py` comes at this from the
+attacker's side — it hands the schema the payloads a hostile or careless
+client would actually send and requires the policy to strip them.
+
+**What is deliberately still collected**, because it is performance/behaviour
+data and not identity: event type and timestamp, which route was viewed, which
+project, which locale, a client-generated random `session_id`, a daily-salted
+IP hash, and a truncated user-agent hash. Nothing in that set is asked of the
+visitor, and the two hashes rotate or truncate specifically so they cannot be
+joined back to a person (see §9's parent section and `architecture.md` §9).
 
 ## 10. Backups
 
@@ -485,27 +702,63 @@ database credential).
 
 ## 13. Pre-Launch Checklist
 
-- [ ] Cloudflare Tunnel running, DNS record proxied (orange cloud), no
-      AAAA record unless also proxied
-- [ ] `ufw` enabled, default-deny inbound, 80/443 never opened, IPv6
-      inbound denied
-- [ ] Tailscale installed on the host and on the admin's own devices;
-      SSH and the admin Caddy site block both bound to `tailscale0`
-- [ ] Public Caddy site block explicitly 404s `/api/v1/admin/*` and
-      `/internal/*`
-- [ ] `trusted_proxies` configured in Caddy for Cloudflare's IP ranges so
-      analytics hash the real visitor IP, not Cloudflare's
-- [ ] fail2ban running for SSH and the admin login endpoint
-- [ ] `.env` is `chmod 600`, not committed, tunnel token and Tailscale key
-      stored the same way as every other secret
-- [ ] `no-new-privileges` and `read_only` set on every production
-      container where feasible; resource limits set on all of them
-- [ ] `noc` service moved off the shared `DATABASE_URL` onto a
-      least-privilege role (see §7 — the one item deliberately left open)
-- [ ] restic backups running nightly, retention configured, **restore
-      tested at least once**
-- [ ] `unattended-upgrades` enabled for OS security patches; Diun (or
+`make preflight` checks most of this automatically and fails rather than warns
+on anything that silently breaks the design. As of **2026-08-20 it reports 48
+passed, 0 failed, 2 warnings** — the site is live and every hard requirement
+below is met.
+
+**Live at https://roloa.tailb961fd.ts.net** — free, no domain, stable hostname.
+
+- [x] ✓ Public ingress is Tailscale Funnel on **443 only**; the admin site on
+      8443 is not published (§2 — the one misconfiguration that would undo
+      everything, and the one preflight fails loudest on)
+- [x] ✓ `DOMAIN` matches the Funnel hostname, so Caddy's public block actually
+      matches instead of falling through to the catch-all
+- [x] ✓ Home IP never published — the hostname resolves to Tailscale's ingress
+      addresses on the public internet. No inbound port opened; CGNAT irrelevant
+- [x] ✓ Valid public TLS, auto-provisioned by Tailscale (`ssl_verify_result: 0`)
+- [x] ✓ Funnel config persists in `tailscaled` state — verified by restarting
+      the daemon and watching it come back on its own. `tailscaled` and
+      `portfolio-stack.service` are both enabled at boot
+- [x] ✓ No quick tunnel running; `cloudflared` is profile-gated so a bare
+      `docker compose up -d` cannot start it tokenless and crashloop
+- [x] ✓ `ufw` enabled, default-deny inbound, 80/443 never opened, IPv6 managed
+- [x] ✓ SSH not open beyond the tailnet (and in fact no `sshd` is installed on
+      this host at all — see §4.1)
+- [x] ✓ Every published Docker port is tailnet-only or loopback-only; nothing
+      binds `0.0.0.0`
+- [x] ✓ Public Caddy block 404s `/internal/*`, `/api/v1/admin/*`,
+      `/api/v1/auth/*`, `/admin*` — verified live through the public ingress
+- [x] ✓ The backend enforces the same boundary independently, with three
+      signals of different kinds (§3.1), the outermost being Tailscale's own
+      un-forgeable Funnel marker
+- [x] ✓ `ADMIN_ENTRY_TOKEN` set, so the entry marker is a shared secret
+- [x] ✓ Real visitor IP survives Funnel → loopback → Docker NAT → Caddy →
+      backend, confirmed by hash comparison rather than assumption (§9)
+- [x] ✓ Analytics accepts performance fields only, enforced server-side (§9.1)
+- [x] ✓ `.env` is `chmod 600`, untracked, no secret appears elsewhere in the repo
+- [x] ✓ `no-new-privileges` on every container, `read_only` where feasible,
+      resource limits on all of them
+- [x] ✓ `noc` on the least-privilege `noc_writer` role (§7)
+- [ ] restic backups running nightly, retention configured, **restore tested at
+      least once** — restic is installed; the schedule is not verified here.
+      **This is now the largest remaining gap.**
+- [ ] `unattended-upgrades`/`dnf-automatic` for OS security patches; Diun (or
       equivalent) watching for container image updates
-- [ ] Network Health / NOC dashboard (§12) checked once after launch to
-      confirm all services show "up" and packet loss is ~0% from the
-      live environment, not just dev
+- [ ] Network Health / NOC dashboard (§12) checked once against the live
+      environment
+
+### Two accepted warnings, not defects
+
+**fail2ban is not running, and installing it now would be theatre.** There is
+no `sshd` on this host, so the SSH jail would watch nothing, and §6's
+admin-login jail needs the backend writing a parseable log file — it currently
+logs to Docker's json-file driver instead. `scripts/harden_host.sh` installs
+and configures it correctly (`banaction = ufw`, tailnet in `ignoreip`, SSH jail
+auto-disabled when no sshd exists) if either of those changes.
+
+**`CONTACT_TO_EMAIL` is hardcoded in the frontend bundle.** The owner's address
+is published on their own CV on purpose, so preflight warns rather than fails.
+What protects the mailbox is the Gmail App Password, which is a real secret and
+is checked. If the contact form should be the only route, remove the address
+from `frontend/src/config/profile.ts`, both i18n bundles and the README.
