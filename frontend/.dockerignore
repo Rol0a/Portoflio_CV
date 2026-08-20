@@ -1,0 +1,11 @@
+# See backend/.dockerignore for why this exists. Vite's own build (COPY . .
+# in the build stage) does not need node_modules from the host, dist from a
+# previous local build, or test coverage output.
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+*.log
+.git/
+.gitignore

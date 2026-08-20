@@ -1,0 +1,19 @@
+# Keeps the build context to exactly what the image needs to run. Without
+# this, `docker build` sends every file under ./backend to the daemon and
+# COPY . . bakes all of it into the image layer — including host-side
+# artifacts from local test runs (__pycache__, .pytest_cache), which then
+# ship in the production image owned by whatever user ran the test, not
+# appuser. Found and cleaned 2026-08-20 (docs/SELF_HOSTING.md).
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+htmlcov/
+.coverage
+.env
+.env.*
+*.log
+.git/
+.gitignore
