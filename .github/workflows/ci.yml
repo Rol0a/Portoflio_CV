@@ -118,8 +118,25 @@ jobs:
       - name: Build backend production image
         run: docker build --target production -t portfolio-backend:ci ./backend
 
+      # The admin site block (:8443) loads a real Tailscale-issued TLS cert
+      # from infrastructure/caddy/certs/ (see docs/SELF_HOSTING.md §6.1 for
+      # why plain HTTP there broke — an HSTS/hostname interaction, not a
+      # preference). That directory is correctly gitignored — it holds a
+      # private key — so it doesn't exist on a fresh checkout, and
+      # `caddy validate` now fails without SOME file at that path, real or
+      # not. A throwaway self-signed pair satisfies the syntax check without
+      # needing (or being able to obtain) a real Tailscale cert in CI.
+      - name: Generate a placeholder cert for Caddyfile validation
+        run: |
+          mkdir -p infrastructure/caddy/certs
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout infrastructure/caddy/certs/admin.key \
+            -out infrastructure/caddy/certs/admin.crt \
+            -subj "/CN=ci-placeholder"
+
       - name: Validate the Caddyfile
         run: |
           docker run --rm -e DOMAIN=portfolio.example.com \
             -v "$PWD/infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -v "$PWD/infrastructure/caddy/certs:/etc/caddy/certs:ro" \
             caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
