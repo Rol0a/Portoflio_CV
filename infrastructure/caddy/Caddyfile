@@ -136,7 +136,50 @@ http://{$DOMAIN} {
 				# If the header is absent (nothing but our own containers can
 				# produce that), this sets an empty value, and the backend
 				# correctly falls back to the peer address.
-				header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+				# Tailscale Funnel OVERWRITES X-Forwarded-For with the real
+				# client address before the request ever reaches this host —
+				# verified empirically: a request forging
+				# `X-Forwarded-For: 1.2.3.4` through the public ingress arrived
+				# here carrying the true address, not the forged one. So the
+				# incoming value is trustworthy and is what analytics and login
+				# throttling must key on (docs/security.md §9).
+				#
+				# Pinning XFF to exactly the incoming value — rather than
+				# letting reverse_proxy append this hop — matters: Caddy would
+				# otherwise send "<visitor>, <docker-gateway>", and the
+				# backend's ProxyHeadersMiddleware trusts only Caddy's own
+				# 172.20.0.10, so it would resolve the gateway as the client
+				# and collapse every visitor to one address.
+				#
+				# (This replaced `{http.request.header.CF-Connecting-IP}`, which
+				# is correct for Cloudflare and empty under Funnel — leaving it
+				# would have silently broken per-visitor analytics AND turned
+				# per-IP login throttling into a single global allowance.)
+				header_up X-Forwarded-For {http.request.header.X-Forwarded-For}
+
+				# Tells the backend this request came in on the PUBLIC path,
+				# so its own exposure guard can refuse admin/auth surfaces
+				# independently of the deny rules above
+				# (backend/app/middleware/exposure.py). `header_up` sets
+				# rather than appends, so a value a visitor sent is
+				# overwritten and cannot be forged through this block.
+				#
+				# This is what makes the deny rules above non-load-bearing on
+				# their own: if one were deleted, /api/v1/admin/* would fall
+				# through to this handler and the backend would still refuse it.
+				header_up X-Portfolio-Entry public
+
+				# Funnel does NOT strip unknown request headers — verified: a
+				# client-supplied X-Portfolio-Entry arrived at the origin
+				# untouched. The `header_up` above already overwrites it, which
+				# is what makes forgery impossible through this block; this
+				# comment exists so nobody "simplifies" that line into a
+				# conditional and reopens the hole.
+				#
+				# Tailscale sets Tailscale-Funnel-Request: ?1 on every public
+				# request and overwrites any client-supplied value, so the
+				# backend treats it as a second, independent proof of public
+				# entry (backend/app/middleware/exposure.py).
 			}
 		}
 
@@ -172,7 +215,21 @@ http://:8443 {
 		}
 
 		handle /api/* {
-			reverse_proxy backend:8000
+			reverse_proxy backend:8000 {
+				# The counterpart to the public block's marker: proof this
+				# request entered through the Tailscale-bound admin site.
+				# The backend refuses any *proxied* admin/auth request that
+				# does not carry it, which also covers the case where the
+				# tunnel is repointed straight at backend:8000 and Caddy is
+				# bypassed entirely.
+				#
+				# ADMIN_ENTRY_TOKEN makes this a shared secret rather than a
+				# guessable constant; the `:admin` default keeps a fresh
+				# checkout working, and the backend logs a warning when it is
+				# running on that default. Both sides read the same variable,
+				# so they cannot drift apart.
+				header_up X-Portfolio-Entry {$ADMIN_ENTRY_TOKEN:admin}
+			}
 		}
 
 		handle {
