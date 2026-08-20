@@ -1,4 +1,25 @@
 # Portfolio
+<!-- Tech Stack -->
+<p align="center">
+  <a href="https://github.com/Rol0a/Portoflio_CV/search?l=python">
+    <img src="https://img.shields.io/badge/Python-56%25-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  </a>
+  <a href="https://github.com/Rol0a/Portoflio_CV/search?l=typescript">
+    <img src="https://img.shields.io/badge/TypeScript-27%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  </a>
+  <a href="https://github.com/Rol0a/Portoflio_CV/search?l=css">
+    <img src="https://img.shields.io/badge/CSS-11.3%25-663399?style=for-the-badge&logo=css&logoColor=white" alt="CSS">
+  </a>
+  <a href="https://github.com/Rol0a/Portoflio_CV/search?l=shell">
+    <img src="https://img.shields.io/badge/Shell-3.9%25-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white" alt="Shell">
+  </a>
+  <a href="https://github.com/Rol0a/Portoflio_CV/search?l=makefile">
+    <img src="https://img.shields.io/badge/Makefile-0.7%25-6D00CC?style=for-the-badge&logo=gnu&logoColor=white" alt="Makefile">
+  </a>
+  <a href="https://github.com/Rol0a/Portoflio_CV/search?l=dockerfile">
+    <img src="https://img.shields.io/badge/Dockerfile-0.5%25-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Dockerfile">
+  </a>
+</p>
 
 Bilingual (EN/ES) CV/portfolio site for Rodrigo López, self-hosted on a home
 server behind Cloudflare Tunnel — no port forwarding, no public IP exposure.
