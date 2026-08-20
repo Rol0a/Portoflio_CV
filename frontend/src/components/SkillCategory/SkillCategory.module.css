@@ -1,10 +1,7 @@
-.group {
-  margin-bottom: var(--space-5);
-}
-
-.group:last-child {
-  margin-bottom: 0;
-}
+/* No margins here on purpose. AnimatedGroup wraps each child in its own
+   <motion.div>, which made `.group:last-child` true for every section and
+   collapsed the gap between bands. The rhythm lives on the flex container
+   (`.bands` in Skills.module.css) instead, where a wrapper can't defeat it. */
 
 /* Category headings carry clearly more weight than a badge and clearly less
    than the page's h1 — the spec's hierarchy, and the reason this is a plain

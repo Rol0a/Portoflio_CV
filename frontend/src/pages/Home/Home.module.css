@@ -63,12 +63,16 @@
   position: relative;
 }
 
+/* 8.075rem is 9.5rem - 15%. Sized down rather than zoomed out *within* the
+   frame: the source is a square 900x900 and the frame is square, so
+   `object-fit: cover` crops nothing — there is no hidden image to reveal, and
+   scaling the <img> would only inset it inside a visible ring. */
 .portrait {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  width: 9.5rem;
-  height: 9.5rem;
+  width: 8.075rem;
+  height: 8.075rem;
   margin: 0 auto var(--space-4);
   border-radius: 999px;
   border: 3px solid var(--color-surface);

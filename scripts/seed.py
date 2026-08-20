@@ -371,6 +371,18 @@ PROJECTS = [
         "slug": "portfolio-platform",
         "category": "software",
         "github_url": "https://github.com/Rol0a/Portoflio_CV",
+        # A screenshot of this platform's own NOC page. Self-referential on
+        # purpose: the admin/monitoring surface is the part of this project that
+        # a screenshot can actually show, in a way a landing page can't.
+        # (The filename says "PersonalProfile" — it is not a portrait. Kept as
+        # uploaded so the path matches the file that ships.)
+        "hero_image": "/images/PersonalProfile.png",
+        # `project_images.alt_text` is a single column, not a translated one, so
+        # this is English-only by schema — not an oversight to "fix" by adding an
+        # es key here that nothing would read.
+        "hero_alt": "The platform's Network Health dashboard: service status pills, "
+        "internet reachability, host CPU/memory/disk over time, and a "
+        "requests-and-errors chart.",
         "demo_url": None,
         "featured": True,
         "sort_order": 3,
@@ -697,11 +709,15 @@ async def seed() -> None:
             # pointing at a file that actually ships, never by this seed
             # guessing a path for it.
             hero_image = entry.get("hero_image")
+            # Defaults to the English title, which reads fine for a build photo;
+            # a screenshot needs to say what it actually shows, so entries can
+            # override it.
+            hero_alt = entry.get("hero_alt") or entry["translations"][Locale.en]["title"]
             project.images = (
                 [
                     ProjectImage(
                         url=hero_image,
-                        alt_text=entry["translations"][Locale.en]["title"],
+                        alt_text=hero_alt,
                         is_hero=True,
                         sort_order=0,
                     )

@@ -12,18 +12,18 @@
 .bands {
   display: flex;
   flex-direction: column;
+  gap: var(--space-5);
 }
 
-/* Two stacked bands on one page now, so each needs its own heading. The top
-   margin is deliberately larger than the grid gap — the break between skills
-   and credentials should read as a section change, not another card row. */
+/* The Certifications heading is the only `.sectionTitle` left — Featured now
+   opens the skills half, so that band needs no separate title. It previously
+   carried a `:first-of-type` reset to `margin-top: 0`, which after that change
+   matched this heading and jammed it against the last badge row. The top margin
+   is deliberately larger than any gap inside either half: the break between
+   skills and credentials should read as a section change, not another row. */
 .sectionTitle {
   font-size: 1.5rem;
   margin: var(--space-6) 0 var(--space-2);
-}
-
-.sectionTitle:first-of-type {
-  margin-top: 0;
 }
 
 .sectionIntro {

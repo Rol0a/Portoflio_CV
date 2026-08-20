@@ -6,7 +6,7 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContai
 import { ApiError, getNetworkHealth, logout } from "../../services/api";
 import type { NetworkHealth as NetworkHealthData } from "../../types";
 import AdminNav from "./AdminNav";
-import { AXIS_LINE, DATA_1, DATA_2, DATA_3, GRID_LINE, INK_MUTED, STATUS_CRITICAL } from "./palette";
+import { AXIS_LINE, DATA_1, DATA_2, DATA_3, GRID_LINE, INK_MUTED, STATUS_CRITICAL, SURFACE } from "./palette";
 import styles from "./NetworkHealth.module.css";
 
 // Disk was violet. Against the blue of CPU it measured a deutan dE of 1.0 —
@@ -15,6 +15,13 @@ import styles from "./NetworkHealth.module.css";
 // not one: aqua is also the sub-3:1 color on white, which is why this chart now
 // has a table view.
 const DISK_DASH = "5 3";
+
+const TOOLTIP_SURFACE = {
+  background: SURFACE,
+  border: `1px solid ${GRID_LINE}`,
+  borderRadius: 6,
+  fontSize: 12,
+} as const;
 
 // Matches the noc service's own sample cadence (docker-compose.yml's
 // NOC_INTERVAL_SECONDS=30) closely enough that a refresh rarely shows the
@@ -191,8 +198,15 @@ export default function NetworkHealth() {
                   <CartesianGrid vertical={false} stroke={GRID_LINE} />
                   <XAxis dataKey="time" tick={{ fontSize: 10, fill: INK_MUTED }} axisLine={{ stroke: AXIS_LINE }} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: INK_MUTED }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip
+                    contentStyle={TOOLTIP_SURFACE}
+                    itemStyle={{ color: INK_MUTED }}
+                    labelStyle={{ color: "#000000", fontWeight: 600 }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: 11 }}
+                    formatter={(value) => <span style={{ color: INK_MUTED }}>{value}</span>}
+                  />
                   <Line type="monotone" dataKey="cpu" name={t("admin.network_health.cpu")} stroke={DATA_1} strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="memory" name={t("admin.network_health.memory")} stroke={DATA_2} strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="disk" name={t("admin.network_health.disk")} stroke={DATA_3} strokeWidth={2} strokeDasharray={DISK_DASH} dot={false} />
@@ -234,8 +248,15 @@ export default function NetworkHealth() {
                   <CartesianGrid vertical={false} stroke={GRID_LINE} />
                   <XAxis dataKey="time" tick={{ fontSize: 10, fill: INK_MUTED }} axisLine={{ stroke: AXIS_LINE }} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: INK_MUTED }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip
+                    contentStyle={TOOLTIP_SURFACE}
+                    itemStyle={{ color: INK_MUTED }}
+                    labelStyle={{ color: "#000000", fontWeight: 600 }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: 11 }}
+                    formatter={(value) => <span style={{ color: INK_MUTED }}>{value}</span>}
+                  />
                   <Bar dataKey="requests" name={t("admin.network_health.requests")} fill={DATA_1} radius={[3, 3, 0, 0]} />
                   <Bar dataKey="errors" name={t("admin.network_health.errors")} fill={STATUS_CRITICAL} radius={[3, 3, 0, 0]} />
                 </BarChart>

@@ -1,21 +1,16 @@
+/* `--header-bg` is a token (global.css) rather than a literal, for the reason
+   docs/frontend-design.md §3 gives: a hardcoded hex can't follow the cascade.
+   This one was cream in light and teal in dark, so the sticky header stayed
+   brand-colored on the admin routes while everything under it went monochrome —
+   a visible band of the wrong palette across the top of the dashboard. */
 .header {
   position: sticky;
   top: 0;
-  background: rgba(248, 242, 239, 0.86);
+  background: var(--header-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 1px 0 var(--color-border);
   z-index: 10;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .header {
-    background: rgba(18, 49, 56, 0.86);
-  }
-}
-
-:root[data-theme="dark"] .header {
-  background: rgba(18, 49, 56, 0.86);
 }
 
 .inner {
