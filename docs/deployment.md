@@ -92,11 +92,47 @@ nothing answers.
 nmap -Pn -p 22,80,443,5432,8000,8443 <public-ip>   # expect all filtered
 ```
 
-### 1.4 Cloudflare Tunnel
+### 1.4 Public ingress: Tailscale Funnel
 
-The tunnel is the only path from the internet to this stack, and it is the
-reason no inbound port is ever opened. It runs as a container in the compose
-file — nothing to install on the host.
+**As of 2026-08-20, the public path is Tailscale Funnel, not Cloudflare
+Tunnel.** The deciding constraint was cost: a Cloudflare *named* tunnel needs
+a DNS zone, which needs a purchased domain; a *quick* tunnel needs no domain
+but hands out a new random `*.trycloudflare.com` hostname on every restart,
+with no uptime guarantee. Funnel gives a stable hostname for free, using the
+Tailscale account already required for admin access (§1.2). See
+`docs/SELF_HOSTING.md` §3–§4 for the full setup and verification, and
+`security.md` §2 for the header-forwarding details this depends on.
+
+Short version:
+
+```bash
+sudo tailscale set --operator=$USER   # once, so funnel needs no sudo
+make funnel                            # tailscale funnel --bg --https=443 http://127.0.0.1:8080
+make funnel-status
+make funnel-off                        # take the site off the internet
+```
+
+**The one configuration that would undo the whole exposure model:** Funnel
+also supports serving `:8443`, which is where the admin site block is bound.
+Funnelling it would publish the admin dashboard to the internet with every
+other control in this document still intact and irrelevant.
+`scripts/preflight.sh` fails loudly if this is ever the case — never override
+that check.
+
+`docker-compose.yml`'s `caddy` service publishes the public site block on
+`127.0.0.1:8080` (host loopback only) specifically so Funnel has something to
+forward into; `"8080:80"` without the loopback-pin would put the whole site on
+the LAN unauthenticated.
+
+#### Optional: Cloudflare Tunnel path (kept, not the default)
+
+The `cloudflared` service is still defined in `docker-compose.yml`, gated
+behind the `cloudflare` Compose profile so a bare `docker compose up -d`
+never starts it — an empty `CLOUDFLARE_TUNNEL_TOKEN` would otherwise
+crashloop the container on every boot. If a domain is ever registered, this
+is the ready-made path back: bring it up with
+`docker compose --profile cloudflare up -d` after completing the setup
+below.
 
 **In the Zero Trust dashboard** (Networks → Tunnels):
 
@@ -130,22 +166,16 @@ rule not being version-controlled. If a request reaches Caddy with an
 unexpected `Host`, the catch-all block answers 404 — check the dashboard's
 hostname entry against `DOMAIN`.
 
-**Health.** The container runs with `TUNNEL_METRICS=0.0.0.0:2000`, which serves
-`/ready` on the compose network only. Two things consume it:
-
-- a container healthcheck (`cloudflared tunnel ready`) — the image has no
-  shell, `wget`, or `curl`, so cloudflared's own subcommand is the only probe
-  available, and it reports whether the tunnel actually holds a connection to
-  Cloudflare rather than merely that the process is alive;
-- the NOC poller, so tunnel state appears on the Network Health dashboard.
-  Without it a tunnel outage looks like a perfectly healthy stack from inside
-  the network while the site is unreachable from outside.
-
 ```bash
 make tunnel-status
 ```
 
 ### 1.5 WSL2 hosts
+
+**See `docs/SELF_HOSTING.md` §2 for the full boot chain, network-layer
+diagram, and the two-separate-Tailscale-identities gotcha** — this section
+covers only the setup steps; that one covers why they're needed and what's
+still a genuine limitation of this hosting model.
 
 A WSL2 distro can host this stack, but it fails differently from a normal
 server: nothing here is unreachable because a port is shut, it is unreachable
@@ -230,11 +260,13 @@ Also keep the VM from being reclaimed, in `%UserProfile%\.wslconfig`
 vmIdleTimeout=-1
 ```
 
-#### Tunnel transport
+#### Tunnel transport (Cloudflare path only)
 
-cloudflared prefers QUIC (UDP 7844). WSL2's NAT layer, and plenty of consumer
-routers, drop or fragment it while leaving TCP untouched — so the tunnel flaps
-or never registers even though egress looks healthy. Verify the paths from the
+Only relevant if running the optional `cloudflare` profile from §1.4 —
+Tailscale Funnel doesn't have this failure mode. cloudflared prefers QUIC
+(UDP 7844). WSL2's NAT layer, and plenty of consumer routers, drop or
+fragment it while leaving TCP untouched — so the tunnel flaps or never
+registers even though egress looks healthy. Verify the paths from the
 compose network itself, not the host:
 
 ```bash
@@ -271,9 +303,10 @@ Fill in every value. The ones with no safe default:
 | `SESSION_SECRET_KEY` | 64 random chars; rotating it invalidates all sessions **and** all analytics IP hashes |
 | `ADMIN_PASSWORD` | seeded once, then changed |
 | `NOC_DB_PASSWORD` | for the least-privilege `noc_writer` role |
-| `CLOUDFLARE_TUNNEL_TOKEN` | from §1.4 |
 | `TAILSCALE_IP` | from §1.2 — the admin site binds here and nowhere else |
-| `DOMAIN` | the public hostname |
+| `DOMAIN` | your Funnel hostname (§1.4) — must exactly match `tailscale status --json`'s `Self.DNSName`, or Caddy's public block never matches |
+| `ADMIN_ENTRY_TOKEN` | shared secret proving admin entry to the backend (`security.md` §3.1); `python3 -c "import secrets; print(secrets.token_hex(32))"` |
+| `CLOUDFLARE_TUNNEL_TOKEN` | only if using the optional `cloudflare` profile from §1.4 — leave empty otherwise |
 | `CONTACT_TO_EMAIL` | private destination; never goes in the frontend |
 | `SMTP_PASSWORD` | Gmail **App Password**, requires 2FA on the account |
 | `TRUSTED_PROXY_IPS` | leave at the compose default (`172.20.0.10`, Caddy's static address) |
@@ -403,8 +436,10 @@ never been restored is a hypothesis.**
 curl -sI https://<domain> | grep -iE 'strict-transport|content-security|x-frame|x-content-type'
 ```
 
-The certificate is Cloudflare's, by design (`security.md` §2 — Caddy cannot run
-ACME because 80/443 are never open).
+The certificate is Tailscale's, provisioned automatically for the Funnel
+hostname (`security.md` §2 — Caddy cannot run ACME because 80/443 are never
+open at the router). Confirm with `curl -s -o /dev/null -w '%{ssl_verify_result}\n' https://<domain>` — `0` means valid.
+Under the optional Cloudflare profile, the certificate is Cloudflare's instead.
 
 ## 5. Cutover
 
@@ -485,8 +520,10 @@ Take a fresh backup immediately before any deploy that carries a migration.
 
 | Symptom | Likely cause | First check |
 |---|---|---|
-| Site unreachable, host fine | tunnel down | `docker compose logs cloudflared`; Cloudflare dashboard shows tunnel health |
-| 502 from Cloudflare | Caddy down or unhealthy | `docker compose ps caddy`; `docker compose logs caddy` |
+| Site unreachable, host fine | Funnel off, or `tailscaled` down | `make funnel-status`; `systemctl status tailscaled` |
+| Site unreachable, `make funnel-status` looks fine | `DOMAIN` doesn't match the Funnel hostname | Caddy's public block never matches, falls through to the 404 catch-all — compare `.env`'s `DOMAIN` against `tailscale status --json`'s `Self.DNSName` |
+| Admin dashboard reachable from the internet | Funnel is serving `:8443`, not just `:443` | `tailscale funnel status`; if 8443 appears, `tailscale funnel --https=8443 off` **immediately** |
+| (Cloudflare profile only) 502 / site down | tunnel container down or token invalid | `docker compose logs cloudflared`; Cloudflare dashboard shows tunnel health |
 | Site loads, fonts wrong | CSP blocking Google Fonts | `font-src` / `style-src` in the Caddyfile |
 | API calls fail in browser only | wrong `VITE_API_URL` baked into the image | rebuild frontend with the build arg empty |
 | Unique visitors stuck at 1 | proxy headers not reaching the backend | `TRUSTED_PROXY_IPS` vs Caddy's actual address; Caddy's `header_up` line |
@@ -511,4 +548,5 @@ Repo-level work that remains, in dependency order:
 3. **Public `GET` rate limiting** at the Caddy layer — the one gap left from
    M16's rate-limiting review.
 4. **Cloudflare Origin Certificate** for end-to-end TLS ("Full (strict)"),
-   optional hardening per `security.md` §2.
+   optional hardening per `security.md` §2 — only applicable if the optional
+   Cloudflare profile (§1.4) is ever adopted in place of Funnel.
