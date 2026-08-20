@@ -8,6 +8,13 @@
 *.pem
 *.key
 
+# Stray SSH keypair found untracked in repo root (2026-08-19) — filename has
+# no extension so *.key above doesn't catch it. Not the key ~/.ssh/config
+# actually uses for origin (different fingerprint); provenance unconfirmed.
+# Ignored here as an immediate safety net — see docs/SESSION_STATE.md.
+/gitkey
+/gitkey.pub
+
 # Node / frontend
 node_modules/
 frontend/dist/
@@ -42,6 +49,11 @@ backend/uploads/
 # docs/security.md for the public/committed architecture equivalent (which
 # uses placeholders only).
 docs/CLAUDE.md
+
+# Live-state scratch doc for coordinating between concurrent/successive
+# Claude Code sessions working in this repo. Point-in-time operational
+# notes, not project documentation — never pushed.
+docs/SESSION_STATE.md
 
 # Personal/project photos served from public/ at runtime. Kept out of git —
 # privacy for the personal photo, and both are regenerable from the
