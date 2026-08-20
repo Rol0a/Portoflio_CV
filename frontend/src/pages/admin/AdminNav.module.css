@@ -1,3 +1,6 @@
+/* Admin chrome — monochrome by the rule in styles/global.css `:root[data-admin]`.
+   The active tab is black-on-white inverted, not accented: navigation is chrome,
+   and chrome gets no color on these pages. */
 .nav {
   display: flex;
   gap: var(--space-1);
@@ -15,6 +18,7 @@
 
 .link:hover:not(.active) {
   background: var(--color-bg-alt);
+  color: var(--color-text);
 }
 
 .active {

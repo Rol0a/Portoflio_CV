@@ -1,6 +1,5 @@
 .category {
   display: inline-block;
-  margin-top: var(--space-3);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -115,4 +114,35 @@
   border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--space-2);
   margin-bottom: var(--space-2);
+}
+
+/* The category label and the in-development chip share one row. The chip is an
+   outlined contrast-colored pill rather than the mint accent — the accent means
+   "go here", and "still being built" is the opposite of a call to action. */
+.badges {
+  margin-top: var(--space-3);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.inDevelopment {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--color-contrast);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}
+
+.developmentNote {
+  border-left: 3px solid var(--color-border-strong);
+  padding: var(--space-2) 0 var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-muted);
+  max-width: 44rem;
 }

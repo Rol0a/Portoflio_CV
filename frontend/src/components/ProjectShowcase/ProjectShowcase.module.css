@@ -57,7 +57,6 @@
   letter-spacing: 0.06em;
   color: var(--color-primary-dark);
   font-weight: 700;
-  margin-bottom: var(--space-2);
 }
 
 .title {
@@ -206,4 +205,27 @@
   .numeral {
     font-size: clamp(3rem, 14vw, 4.5rem);
   }
+}
+
+/* The category label and the in-development chip share one row. The chip is an
+   outlined contrast-colored pill rather than the mint accent — the accent means
+   "go here", and "still being built" is the opposite of a call to action. */
+.badges {
+  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.inDevelopment {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--color-contrast);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
 }

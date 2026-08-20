@@ -1,12 +1,10 @@
+/* Chrome here is deliberately colorless — the black-on-white admin shell lives
+   in `:root[data-admin]` (styles/global.css), which this file just consumes via
+   the shared `--color-*` tokens. The only color on the page belongs to data:
+   the stat values, the chart series, the legend swatches. If you find yourself
+   adding a hue to a button, a border, or a heading, that's the rule breaking.
+   Chart series hexes are mirrored in ./palette.ts — see docs/frontend-design.md §3. */
 .page {
-  /* Chart colors below are a separate, colorblind-validated data-viz
-     palette — NOT part of the brand palette in docs/frontend-design.md §3.
-     Don't re-theme them to match; see that section for why. */
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --chart-surface: #fcfcfb;
-  --grid-line: #e1e0d9;
-  --axis-line: #c3c2b7;
   padding-block: var(--space-4) var(--space-6);
 }
 
@@ -69,9 +67,9 @@
 }
 
 .rangeBtn[aria-pressed="true"] {
-  background: var(--series-1);
-  border-color: var(--series-1);
-  color: #fff;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .statGrid {
@@ -82,7 +80,7 @@
 }
 
 .statTile {
-  background: var(--chart-surface);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-3);
@@ -94,10 +92,16 @@
   margin: 0 0 0.3rem;
 }
 
+/* The metric itself is the one thing on a stat tile allowed to carry color —
+   the label above it stays in muted ink. Tabular figures so a column of tiles
+   lines up digit-for-digit instead of shimmying as the numbers change. */
 .statValue {
-  font-size: 1.6rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
   margin: 0;
+  color: var(--data-1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 .chartsGrid {
@@ -108,7 +112,7 @@
 }
 
 .chartCard {
-  background: var(--chart-surface);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-3) var(--space-2);
@@ -185,6 +189,7 @@
   gap: var(--space-3);
   margin-bottom: var(--space-2);
   font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .langLegendItem {
@@ -200,23 +205,20 @@
   display: inline-block;
 }
 
+/* 2px of surface between the segments, per the dataviz mark spec: adjacent
+   fills need a gap so the boundary is a shape, not just a hue change. */
 .langBar {
   display: flex;
-  height: 1.75rem;
-  border-radius: 6px;
+  height: 1.25rem;
+  border-radius: 4px;
   overflow: hidden;
   gap: 2px;
-  background: var(--chart-surface);
+  background: var(--color-surface);
 }
 
 .langSegment {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 600;
-  min-width: 2ch;
+  min-width: 2px;
+  border-radius: 2px;
 }
 
 .activityList {

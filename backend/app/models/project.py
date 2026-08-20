@@ -39,6 +39,19 @@ class ProjectCategory(str, enum.Enum):
     academic_research = "academic_research"
 
 
+class ProjectStatus(str, enum.Enum):
+    """Whether a project is finished work or still being built.
+
+    Exists so "no GitHub link" stops being ambiguous. A null `github_url` was
+    already carrying two very different meanings — the work is private/offline,
+    or the work isn't done yet — and the UI could only render the absence, not
+    the reason. `in_development` says the second one out loud.
+    """
+
+    complete = "complete"
+    in_development = "in_development"
+
+
 class TechCategory(str, enum.Enum):
     programming = "programming"
     embedded_systems = "embedded_systems"
@@ -72,6 +85,11 @@ class Project(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     slug: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     category: Mapped[ProjectCategory] = mapped_column(Enum(ProjectCategory, name="project_category"), nullable=False)
+    status: Mapped[ProjectStatus] = mapped_column(
+        Enum(ProjectStatus, name="project_status"),
+        nullable=False,
+        server_default=ProjectStatus.complete.value,
+    )
     github_url: Mapped[str | None] = mapped_column(Text)
     demo_url: Mapped[str | None] = mapped_column(Text)
     featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

@@ -427,14 +427,14 @@ For a portfolio with 2 languages today but potentially more later, and with mode
 │ id          PK UUID │◄──┐   │ id              PK UUID      │
 │ slug        UK TEXT │   │   │ project_id      FK UUID ─────│──┐
 │ category    ENUM    │   │   │ locale       ENUM(en,es)    │  │
-│ github_url  TEXT?   │   │   │ title          TEXT NOT NULL  │  │
-│ demo_url    TEXT?   │   │   │ short_desc     TEXT NOT NULL  │  │
-│ featured    BOOL    │   │   │ overview       TEXT           │  │
-│ sort_order  INT     │   │   │ problem        TEXT           │  │
-│ created_at  TIMESTZ │   │   │ requirements   TEXT           │  │
-│ updated_at  TIMESTZ │   │   │ architecture   TEXT           │  │
-└─────────────────────┘   │   │ implementation TEXT           │  │
-                          │   │ decisions      TEXT           │  │
+│ status      ENUM    │   │   │ title          TEXT NOT NULL  │  │
+│ github_url  TEXT?   │   │   │ short_desc     TEXT NOT NULL  │  │
+│ demo_url    TEXT?   │   │   │ overview       TEXT           │  │
+│ featured    BOOL    │   │   │ problem        TEXT           │  │
+│ sort_order  INT     │   │   │ requirements   TEXT           │  │
+│ created_at  TIMESTZ │   │   │ architecture   TEXT           │  │
+│ updated_at  TIMESTZ │   │   │ implementation TEXT           │  │
+└─────────────────────┘   │   │ decisions      TEXT           │  │
                           │   │ challenges     TEXT           │  │
                           │   │ testing_desc   TEXT           │  │
                           │   │ results        TEXT           │  │
@@ -477,9 +477,8 @@ For a portfolio with 2 languages today but potentially more later, and with mode
                           │   │ id          PK UUID          │  │  │
                           │   │ name        TEXT UNIQUE      │  │  │
                           │   │ category    ENUM             │  │  │
-                          │   │ proficiency INT? (1-5)       │  │  │
+                          │   │ featured_rank INT?           │  │  │
                           │   │ sort_order  INT              │  │  │
-                          │   │ icon_url    TEXT?            │  │  │
                           │   └──────────────────────────────┘  │
                           │                                     │
                           │   ┌──────────────────────────────┐  │
@@ -520,6 +519,9 @@ enum ProjectCategory {
     devops_infra, academic_research
 }
 
+# projects.status — NOT NULL, defaults to `complete`
+enum ProjectStatus { complete, in_development }
+
 # technologies.category
 enum TechCategory {
     programming, embedded_systems, electronics,
@@ -527,11 +529,12 @@ enum TechCategory {
     cybersecurity, linux_devops, engineering_tools
 }
 
-# skills.category
+# skills.category — declaration order IS the on-page section order
+# (Postgres sorts an enum column by the type's declared order).
 enum SkillCategory {
-    programming, embedded_systems, electronics,
-    automation, web_dev, ml_data,
-    cybersecurity, linux_devops, engineering_tools
+    programming, embedded_systems, hardware_design,
+    robotics, networks, web_backend,
+    linux_devops, data_ml
 }
 
 # analytics_events.event_type
@@ -541,6 +544,30 @@ enum AnalyticsEventType {
     language_change
 }
 ```
+
+**Why `skills` has no `proficiency`.** It did, on a 1–5 self-assessed scale
+rendered as bars. A self-assessed 3/5 beside "SolidWorks" is not a fact a
+reader can act on, and it invited a comparison the data could not support — so
+the column was dropped rather than hidden, and the projects carry the evidence
+of depth instead. `icon_url` went with it: never populated, and icons now live
+in the frontend's `SkillBadge` map, where changing one is an edit rather than a
+migration.
+
+`featured_rank` replaced both. One nullable integer carries two facts: NULL
+means the skill is not in the page's opening Featured row, and any value is its
+position in that row. A "featured" *category* was the obvious alternative and is
+wrong — `skills.name` is UNIQUE, so it would require Python and Docker to exist
+as duplicate rows.
+
+**Why `projects.status` exists.** A null `github_url` was carrying two very
+different meanings — *the work is private or offline* versus *the work isn't
+finished yet* — and the UI could only render the absence, never the reason. A
+visitor reading a project card with no repo link had no way to tell an
+unpublished repo from an unwritten one. `in_development` says the second one
+out loud: the card and detail page get an explicit badge, and the detail page
+adds a short note that the write-up and repository will follow as the work
+advances. The default is `complete`, so a project only declares a status when
+it is *not* finished.
 
 ### Key Constraints and Indexes
 
@@ -620,6 +647,7 @@ Returns all published projects with translations for the requested locale.
       "id": "uuid",
       "slug": "sumobot",
       "category": "robotics",
+      "status": "complete",
       "github_url": "https://github.com/user/sumobot",
       "demo_url": null,
       "featured": true,
@@ -643,6 +671,7 @@ Returns full project detail including translations and images.
   "id": "uuid",
   "slug": "sumobot",
   "category": "robotics",
+  "status": "complete",
   "github_url": "https://github.com/user/sumobot",
   "demo_url": null,
   "featured": true,
@@ -674,21 +703,31 @@ Returns full project detail including translations and images.
 
 #### `GET /api/v1/skills`
 
-Returns all skills grouped by category.
+Returns all skills grouped by category, plus the curated Featured row.
 
-**Query parameters:**
-- `locale` (optional, default: `en`)
+Skill names are technology names — they are not translated, so this endpoint
+takes no `locale`. Only the *category headings* are localised, and those live in
+the frontend i18n bundles under `skills.categories`.
+
+`featured` is a flat list rather than a group: it is a cross-section of the
+categories below, so giving it a group shape would mean inventing a
+`SkillCategory` value that no row actually holds.
 
 **Response:**
 ```json
 {
+  "featured": [
+    { "name": "Python" },
+    { "name": "C++" },
+    { "name": "ESP32" }
+  ],
   "categories": [
     {
       "category": "programming",
       "skills": [
-        { "name": "Python", "proficiency": 4 },
-        { "name": "TypeScript", "proficiency": 3 },
-        { "name": "C/C++", "proficiency": 4 }
+        { "name": "Python" },
+        { "name": "C" },
+        { "name": "C++" }
       ]
     }
   ]

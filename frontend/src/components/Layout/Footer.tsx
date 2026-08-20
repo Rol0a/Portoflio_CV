@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { GITHUB_URL, LINKEDIN_URL } from "../../config/profile";
+import { GITHUB_URL, INSTAGRAM_URL, LINKEDIN_URL } from "../../config/profile";
 import styles from "./Footer.module.css";
 
 export default function Footer() {
@@ -20,6 +20,9 @@ export default function Footer() {
           </a>
           <a href={LINKEDIN_URL} target="_blank" rel="noreferrer">
             LinkedIn
+          </a>
+          <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">
+            Instagram
           </a>
         </span>
       </div>

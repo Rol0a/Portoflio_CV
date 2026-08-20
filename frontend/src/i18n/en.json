@@ -6,10 +6,9 @@
   },
   "nav": {
     "home": "Home",
-    "about": "About",
+    "experience": "Experience",
     "skills": "Skills",
     "projects": "Projects",
-    "certifications": "Certifications",
     "contact": "Contact"
   },
   "home": {
@@ -35,35 +34,108 @@
     "closing_body": "I'm interested in engineering and software work involving embedded systems, robotics, electronics, automation, aerospace, telecommunications, full-stack development, and technical R&D. If you're building a system that combines software with real-world hardware, data, or engineering constraints, I'd like to hear about it.",
     "closing_cta": "Get in touch"
   },
-  "about": {
-    "eyebrow": "The Short Version",
-    "title": "About Me",
-    "body": [
-      "I'm a Mechatronics and Electronic Engineering student at Universidad del Valle de Guatemala, with experience spanning embedded systems, software development, aerospace R&D, robotics, electronics, digital fabrication, networking, and engineering research.",
-      "That work has taken me from university laboratories in Guatemala to aerospace organizations in Boulder, Colorado, and international space-industry programmes. I've developed embedded firmware, integrated sensors and communication interfaces, designed electronic and mechanical systems, supported flight-related biomedical hardware, worked on CubeSat and de-orbit concepts, automated engineering workflows, maintained Linux environments, and built full-stack software infrastructure.",
-      "I approach engineering as a systems problem rather than a collection of isolated disciplines. A useful product usually demands the mechanical structure, electronics, firmware, communications, software architecture, manufacturing constraints, testing process, and user requirements be understood at the same time. That multidisciplinary view is the common thread across everything here."
-    ],
+  "experience": {
+    "eyebrow": "Where I've Worked",
+    "title": "Experience",
+    "intro": "Mechatronics and Electronic Engineering at Universidad del Valle de Guatemala, and five roles that have run from aerospace R&D in Boulder, Colorado to CubeSat and digital-fabrication labs in Guatemala City. One through-line: engineering treated as a systems problem — mechanics, electronics, firmware, communications, software architecture and validation understood at the same time, not as separate disciplines handed off to each other.",
     "meta_title": "Quick facts",
     "location": "Location: Guatemala City, Guatemala",
     "email": "Email: mlopez2018ig@gmail.com",
     "education": "Education: B.S. Mechatronics & Electronic Engineering, Universidad del Valle de Guatemala (2023–present)",
-    "focus": "Focus: Embedded systems, robotics, electronics, Linux infrastructure, aerospace"
+    "focus": "Focus: Embedded systems, robotics, electronics, Linux infrastructure, aerospace",
+    "expand_hint": "Select a role to read what it involved",
+    "roles": [
+      {
+        "id": "iaf-ipmc",
+        "role": "Delegate — Supply Chain Resilience Lead",
+        "org": "IAF IPMC Young Professionals Leadership Development Programme",
+        "place": "Remote / Global",
+        "period": "2025–2026",
+        "summary": "Selected for the programme's 2026 cohort to develop analysis and decision-support methodologies for complex technological projects.",
+        "highlights": [
+          "Analysed large volumes of technical information to identify operational risks and propose monitoring methodologies for distributed systems.",
+          "Evaluated artificial intelligence, machine learning, digital twins and predictive analytics for process monitoring and performance-indicator definition.",
+          "Built methodologies for modelling information flows, inter-system dependencies and operational resilience across engineering projects.",
+          "Co-authored technical documentation on digital tooling for project monitoring and analysis."
+        ]
+      },
+      {
+        "id": "jaguar-space",
+        "role": "Research & Development Management Assistant",
+        "org": "Jaguar Space LLC.",
+        "place": "Boulder, CO",
+        "period": "2024–2026",
+        "summary": "Translated client requirements into technical specifications, system architecture and implementation plans for technology products.",
+        "highlights": [
+          "Wrote Python tooling to automate engineering workflows, data analysis and the generation of technical information used during product development.",
+          "Worked with multidisciplinary teams on hardware/software interfaces, documenting system behaviour and supporting integration.",
+          "Integrated and diagnosed embedded communication interfaces over UART and serial links, using sensors and diagnostic tooling for system validation.",
+          "Produced functional specifications, validation procedures, engineering reports and product documentation under a structured development process."
+        ]
+      },
+      {
+        "id": "dhive-makerlab",
+        "role": "Engineering Assistant",
+        "org": "D-HIVE MakerLab UVG",
+        "place": "Guatemala City",
+        "period": "2024–2025",
+        "summary": "Kept a digital-fabrication lab running — the equipment, the Linux environments behind it, and the students using both.",
+        "highlights": [
+          "Diagnosed calibration, firmware and hardware/software integration faults on digital-fabrication equipment.",
+          "Administered Linux-based development environments and embedded systems that the lab equipment depended on.",
+          "Wrote technical manuals, operating procedures and troubleshooting guides to raise equipment availability.",
+          "Advised students on microcontroller programming, embedded-system integration and application development.",
+          "Documented technical incidents and proposed workflow improvements to increase the lab's operational efficiency."
+        ]
+      },
+      {
+        "id": "uvg-aerospace",
+        "role": "Member",
+        "org": "UVG Aerospace Laboratory",
+        "place": "Guatemala City",
+        "period": "2024–2025",
+        "summary": "Firmware architecture for CubeSat-class subsystems, from state machines to the protocols between them.",
+        "highlights": [
+          "Designed firmware architecture for CubeSat-type subsystems: state machines, peripheral control, telemetry and operating logic.",
+          "Developed firmware proposals for sensor integration, PWM control, H-bridge drivers and serial communication between embedded modules.",
+          "Specified inter-subsystem communication interfaces over UART and I²C, documenting the integration contract.",
+          "Used Git to manage changes across firmware, technical documentation and hardware/software integration.",
+          "Produced software architecture diagrams, interface documentation and test procedures for system integration."
+        ]
+      },
+      {
+        "id": "bioserve",
+        "role": "Engineering Intern",
+        "org": "BioServe Space Technologies",
+        "place": "Boulder, CO",
+        "period": "2024",
+        "summary": "Embedded systems for environmental monitoring and automatic data acquisition during biomedical spaceflight experiments.",
+        "highlights": [
+          "Programmed embedded systems for environmental monitoring and automatic data acquisition during biomedical experiments.",
+          "Integrated sensors with data-acquisition platforms for space-research experiments.",
+          "Ran functional tests and validation processes on electronic systems ahead of integration.",
+          "Documented test procedures, results and hardware/software integration."
+        ]
+      }
+    ]
   },
   "skills": {
     "eyebrow": "What I Work With",
-    "title": "Skills",
-    "intro": "The languages, platforms, and tools I actually reach for, grouped by where they show up in the work. Bars reflect self-assessed depth, not certifications.",
+    "title": "Skills & Certifications",
+    "intro": "A quick map of the technical stack — the languages, platforms and tools I actually reach for, grouped by engineering discipline rather than by what kind of thing each one is. No proficiency scores: the projects are the evidence of depth. Formal training and recognition follow below.",
     "categories": {
+      "featured": "Featured",
       "programming": "Programming",
       "embedded_systems": "Embedded Systems",
-      "electronics": "Electronics",
-      "automation": "Automation",
-      "web_dev": "Web Development",
-      "ml_data": "ML & Data",
-      "cybersecurity": "Cybersecurity",
+      "hardware_design": "Hardware Design",
+      "robotics": "Robotics",
+      "networks": "Networks",
+      "web_backend": "Web & Backend",
       "linux_devops": "Linux & DevOps",
-      "engineering_tools": "Engineering Tools"
-    }
+      "data_ml": "Data & ML"
+    },
+    "section_certifications": "Certifications & Recognition",
+    "badge_list": "{{category}} skills"
   },
   "projects": {
     "eyebrow": "The Full List",
@@ -87,7 +159,9 @@
       "testing_desc": "Testing",
       "results": "Results",
       "lessons": "Lessons Learned"
-    }
+    },
+    "status_in_development": "In development",
+    "in_development_note": "This project is actively being built. The write-up and repository will be published here as it advances."
   },
   "certifications": {
     "eyebrow": "Credentials",
@@ -113,7 +187,7 @@
   },
   "footer": {
     "rights": "All rights reserved.",
-    "disclaimer": "This server is still being built and will soon migrate to self-hosted infrastructure, so this link may change."
+    "disclaimer": "Self-Hosted through Tailscale Funnel"
   },
   "not_found": {
     "title": "Page not found",
@@ -148,12 +222,15 @@
       "chart_language": "Language Distribution",
       "recent_activity": "Recent Activity",
       "demo_data_notice": "Showing seeded demo data — live visitor tracking (M8) isn't built yet.",
-      "no_recent_activity": "No recent activity."
+      "no_recent_activity": "No recent activity.",
+      "date": "Date"
     },
     "network_health": {
       "title": "Network Health",
       "logout": "Log Out",
       "notice": "Sampled by the standalone NOC service roughly every 30 seconds.",
+      "active_visitors_title": "Active Visitors Now",
+      "active_visitors_window": "in the last {{count}} minutes",
       "no_data": "No samples yet — the NOC service polls shortly after startup.",
       "last_updated": "Last updated",
       "services_title": "Service Status",
@@ -169,7 +246,9 @@
       "disk": "Disk",
       "requests": "Requests",
       "errors": "Errors",
-      "unreachable": "Unreachable"
-    }
+      "unreachable": "Unreachable",
+      "time": "Time"
+    },
+    "view_as_table": "View as table"
   }
 }

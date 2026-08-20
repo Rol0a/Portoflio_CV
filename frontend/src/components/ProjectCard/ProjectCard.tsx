@@ -22,7 +22,12 @@ export default function ProjectCard({ project }: ProjectCardProps) {
       onMouseLeave={tilt.handleMouseLeave}
     >
       <span className={styles.sheen} aria-hidden="true" />
-      <span className={styles.category}>{project.category.replace("_", " ")}</span>
+      <span className={styles.badges}>
+        <span className={styles.category}>{project.category.replace("_", " ")}</span>
+        {project.status === "in_development" && (
+          <span className={styles.inDevelopment}>{t("projects.status_in_development")}</span>
+        )}
+      </span>
       <h3 className={styles.title}>{project.title}</h3>
       <p className={styles.desc}>{project.shortDesc}</p>
       <ul className={styles.techList}>

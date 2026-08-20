@@ -135,7 +135,7 @@ export default function Home() {
           )}
 
           <div className={styles.viewAllRow}>
-            <Link to="/certifications" className={styles.viewAll}>
+            <Link to="/skills" className={styles.viewAll}>
               {t("home.certifications_cta")} →
             </Link>
           </div>

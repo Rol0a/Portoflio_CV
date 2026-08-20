@@ -1,14 +1,9 @@
+/* Same rule as AdminDashboard.module.css: the shell is black-on-white from
+   `:root[data-admin]` (styles/global.css), and color is spent only on data —
+   here that means the status dots, the active-visitor count and the chart
+   series. Status hexes are the dataviz skill's fixed status palette, mirrored
+   in ./palette.ts for the chart side. See docs/frontend-design.md §3. */
 .page {
-  /* RAG status colors — semantic (up/down/degraded), deliberately distinct
-     from the chart series colors below and from the brand accent, same
-     principle as AdminDashboard.module.css's chart palette exclusion. See
-     docs/frontend-design.md §3. */
-  --status-up: #2f9e44;
-  --status-down: #e03131;
-  --status-degraded: #f08c00;
-  --chart-surface: #fcfcfb;
-  --grid-line: #e1e0d9;
-  --axis-line: #c3c2b7;
   padding-block: var(--space-4) var(--space-6);
 }
 
@@ -61,7 +56,7 @@
 }
 
 .chartCard {
-  background: var(--chart-surface);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-3) var(--space-2);
@@ -86,6 +81,23 @@
 
 .chartCard.wide {
   grid-column: 1 / -1;
+}
+
+/* The one number an admin opens this page to see, so it gets the accent rail
+   and the colored figure — the page's other headline metric treatment. */
+.activeVisitorsCard {
+  border-left: 3px solid var(--status-good);
+}
+
+.activeVisitorsCard .packetLoss {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.activeVisitorsCard strong {
+  font-size: 1.75rem;
+  color: var(--status-good);
+  font-variant-numeric: tabular-nums;
 }
 
 .statusGrid {
@@ -117,25 +129,50 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Outlined, not filled. A solid status fill would put a block of color into
+   the chrome; the dot keeps the signal and leaves the pill itself monochrome —
+   which also fixes the old white-on-amber pill, measured 1.8:1. */
 .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.72rem;
   font-weight: 700;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  color: #fff;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
   white-space: nowrap;
 }
 
+/* Three separate channels, on purpose: the dot carries color, the glyph carries
+   shape, the word carries the meaning. Only the dot is tinted — amber measures
+   1.8:1 on white, which is acceptable for an 8px mark sitting beside a label
+   and never acceptable for the label itself. */
+.pillDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--pill-status);
+  flex-shrink: 0;
+}
+
+.pillGlyph {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
 .pill_up {
-  background: var(--status-up);
+  --pill-status: var(--status-good);
 }
 
 .pill_down {
-  background: var(--status-down);
+  --pill-status: var(--status-critical);
 }
 
 .pill_degraded {
-  background: var(--status-degraded);
+  --pill-status: var(--status-warning);
 }
 
 .packetLoss {
@@ -169,6 +206,33 @@
 }
 
 .targetUnreachable {
-  color: var(--status-down);
+  color: var(--status-critical);
   font-weight: 600;
+}
+
+/* Mirrors AdminDashboard's table toggle so both admin pages expose the same
+   affordance in the same shape. */
+.tableToggle {
+  margin-top: var(--space-2);
+  font-size: 0.78rem;
+}
+
+.tableToggle summary {
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.tableToggle table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-2);
+  font-size: 0.8rem;
+}
+
+.tableToggle th,
+.tableToggle td {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
 }

@@ -1,0 +1,239 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.hint {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-contrast);
+  margin: 0 0 var(--space-4);
+}
+
+/* The rail is drawn on the <ol> rather than per-item so it reads as one
+   continuous line through the whole history, instead of restarting at each
+   role. Items overlay their own marker on top of it. */
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--space-4);
+  position: relative;
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.item {
+  position: relative;
+  padding-bottom: var(--space-4);
+}
+
+.item:last-child {
+  padding-bottom: 0;
+}
+
+.marker {
+  position: absolute;
+  left: calc(-1 * var(--space-4) - 5px);
+  top: 0.95rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
+  transition: background var(--duration-fast) var(--ease-cozy),
+    border-color var(--duration-fast) var(--ease-cozy);
+}
+
+.itemOpen .marker {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.itemHeading {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.trigger {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "period chevron"
+    "role chevron"
+    "org chevron";
+  gap: 0.15rem var(--space-3);
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-left: calc(-1 * var(--space-3));
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: background var(--duration-fast) var(--ease-cozy),
+    border-color var(--duration-fast) var(--ease-cozy);
+}
+
+.trigger:hover {
+  background: var(--color-bg-alt);
+}
+
+.itemOpen .trigger {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.period {
+  grid-area: period;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-contrast);
+  font-variant-numeric: tabular-nums;
+}
+
+.role {
+  grid-area: role;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.org {
+  grid-area: org;
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+}
+
+.chevron {
+  grid-area: chevron;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-text-muted);
+  transition: transform var(--duration-base) var(--ease-cozy);
+}
+
+.itemOpen .chevron {
+  transform: rotate(180deg);
+}
+
+/* Height is animated on this wrapper; the padding lives on .panelInner so the
+   collapsed state can reach a true 0 height without fighting its own padding. */
+.panel {
+  overflow: hidden;
+}
+
+.panelInner {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+}
+
+.summary {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+}
+
+.highlights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 0.94rem;
+  color: var(--color-text-muted);
+}
+
+.highlights li {
+  position: relative;
+  padding-left: 1.1rem;
+}
+
+.highlights li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+.meta {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: 0 1px 2px rgba(var(--shadow-color), 0.04);
+  position: sticky;
+  top: var(--space-6);
+}
+
+.metaTitle {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-contrast);
+  margin: 0 0 var(--space-3);
+}
+
+.metaList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 0.92rem;
+}
+
+.metaList li {
+  position: relative;
+  padding-left: 1.1rem;
+}
+
+.metaList li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .meta {
+    position: static;
+  }
+}
+
+@media (max-width: 480px) {
+  .role {
+    font-size: 1.05rem;
+  }
+}

@@ -32,6 +32,16 @@ EVENT_RATE_LIMIT_WINDOW = timedelta(minutes=1)
 EVENT_RATE_LIMIT_MAX = 60  # §7: "Max 60 events per session per minute"
 PAGE_VIEW_DEDUP_WINDOW = timedelta(seconds=30)  # §9 duplicate-prevention table
 
+# "Live visitor tracking" (M8 extension): a session counts as active if it has
+# emitted ANY event in this window, not just a page_view. Page views alone
+# would undercount a visitor who's sitting on one page interacting (a
+# project-link click, a language change) without navigating — there's no
+# heartbeat event type in this app, so "any recent event" is the closest
+# available proxy for "someone is here right now". 5 minutes is short enough
+# to read as "now" on an admin dashboard, long enough that a visitor reading
+# a single page doesn't flicker in and out between events.
+ACTIVE_VISITOR_WINDOW_MINUTES = 5
+
 
 def is_bot_user_agent(user_agent: str | None) -> bool:
     return bool(user_agent) and BOT_USER_AGENT_PATTERN.search(user_agent) is not None
@@ -121,6 +131,26 @@ async def record_event(
 async def _count(db: AsyncSession, event_type: AnalyticsEventType, since: datetime) -> int:
     stmt = select(func.count()).select_from(AnalyticsEvent).where(
         AnalyticsEvent.event_type == event_type, AnalyticsEvent.created_at >= since
+    )
+    return (await db.execute(stmt)).scalar_one()
+
+
+async def get_active_visitor_count(db: AsyncSession) -> int:
+    """Distinct sessions with at least one event in the last
+    `ACTIVE_VISITOR_WINDOW_MINUTES` — the number the Network Health admin
+    page shows as "active now" (M8 extension, merged with the standalone
+    `noc` service's data at the route layer in routes/admin.py, keeping this
+    service's only data source `analytics_events`, same as every other
+    function here).
+
+    No new storage, no new transport: this is a query over the table M8
+    already built, computed fresh on every request rather than sampled on a
+    timer, which is what makes it "live" rather than "as of the last NOC
+    poll".
+    """
+    since = datetime.now(timezone.utc) - timedelta(minutes=ACTIVE_VISITOR_WINDOW_MINUTES)
+    stmt = select(func.count(func.distinct(AnalyticsEvent.session_id))).where(
+        AnalyticsEvent.created_at >= since
     )
     return (await db.execute(stmt)).scalar_one()
 

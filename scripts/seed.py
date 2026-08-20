@@ -164,64 +164,109 @@ TECHNOLOGIES = [
 # (name, category, proficiency 1-5). Order within a category is the display
 # order — the skills endpoint sorts by (category, sort_order), which is
 # assigned from this list's index in seed().
+# (name, category, featured_rank). `featured_rank` is None for everything that
+# isn't in the page's opening Featured row; where it's set, the number is that
+# badge's position in that row.
+#
+# Deliberate omissions, so a future session doesn't "restore" them:
+# - No proficiency values. The badges show no numbers; the projects are the
+#   evidence of depth (see the migration that dropped the column).
+# - Names are short and single-concept. "PWM & Motor Control" became `PWM` and
+#   `Motor Control`; "Bluetooth & Serial Links" became `Bluetooth` and
+#   `Serial Communication`.
+# - `skills.name` is UNIQUE, so a skill that fits two categories is filed under
+#   one. Motor Control -> Embedded Systems (it's the ESP32/H-bridge work),
+#   SSH -> Networks, TypeScript and Bash -> Programming, PostgreSQL and SQLite
+#   -> Web & Backend.
+# - Ubuntu is dropped: Fedora is the actual daily environment, and listing three
+#   distributions at equal weight overstates the other two.
+# - Component-level parts (H-bridges, DC-DC converters, motor drivers) are not
+#   skills here. They belong in the project write-ups that demonstrate them.
 SKILLS = [
-    ("Python", SkillCategory.programming, 4),
-    ("C / C++", SkillCategory.programming, 4),
-    ("Embedded C", SkillCategory.programming, 4),
-    ("Bash", SkillCategory.programming, 3),
-    ("TypeScript", SkillCategory.programming, 2),
-    ("SQL", SkillCategory.programming, 2),
+    ("Python", SkillCategory.programming, 1),
+    ("C", SkillCategory.programming, None),
+    ("C++", SkillCategory.programming, 2),
+    ("Embedded C", SkillCategory.programming, None),
+    ("Bash", SkillCategory.programming, None),
+    ("TypeScript", SkillCategory.programming, None),
+    ("SQL", SkillCategory.programming, None),
 
-    ("ESP32", SkillCategory.embedded_systems, 4),
-    ("Arduino / ATmega328P", SkillCategory.embedded_systems, 4),
-    ("PWM & Motor Control", SkillCategory.embedded_systems, 4),
-    ("UART / SPI / I2C", SkillCategory.embedded_systems, 3),
-    ("Bluetooth & Serial Links", SkillCategory.embedded_systems, 3),
-    ("Sensor Acquisition & Telemetry", SkillCategory.embedded_systems, 3),
+    ("ESP32", SkillCategory.embedded_systems, 3),
+    ("Arduino", SkillCategory.embedded_systems, None),
+    ("ATmega328P", SkillCategory.embedded_systems, None),
+    ("UART", SkillCategory.embedded_systems, None),
+    ("SPI", SkillCategory.embedded_systems, None),
+    ("I2C", SkillCategory.embedded_systems, None),
+    ("PWM", SkillCategory.embedded_systems, None),
+    ("Bluetooth", SkillCategory.embedded_systems, None),
+    ("Serial Communication", SkillCategory.embedded_systems, None),
+    ("Sensor Acquisition", SkillCategory.embedded_systems, None),
+    ("Telemetry", SkillCategory.embedded_systems, None),
+    ("Motor Control", SkillCategory.embedded_systems, None),
 
-    ("Schematic & PCB Design", SkillCategory.electronics, 3),
-    ("PCB Bring-up & Bench Testing", SkillCategory.electronics, 3),
-    ("H-Bridges & Motor Drivers", SkillCategory.electronics, 4),
-    ("Power Regulation & DC-DC Conversion", SkillCategory.electronics, 3),
-    ("Soldering & Assembly", SkillCategory.electronics, 4),
+    ("Altium Designer", SkillCategory.hardware_design, 9),
+    ("PCB Design", SkillCategory.hardware_design, None),
+    ("PCB Bring-up", SkillCategory.hardware_design, None),
+    ("Autodesk Fusion 360", SkillCategory.hardware_design, 8),
+    ("SolidWorks", SkillCategory.hardware_design, None),
+    ("Autodesk Inventor", SkillCategory.hardware_design, None),
+    ("FDM Printing", SkillCategory.hardware_design, None),
+    ("SLA Printing", SkillCategory.hardware_design, None),
+    ("Laser Cutting", SkillCategory.hardware_design, None),
+    ("Soldering", SkillCategory.hardware_design, None),
+    ("DFM / DFA", SkillCategory.hardware_design, None),
+    ("Rapid Prototyping", SkillCategory.hardware_design, None),
 
-    ("Python Engineering Automation", SkillCategory.automation, 4),
-    ("Bash Scripting", SkillCategory.automation, 3),
-    ("Automated Data Acquisition", SkillCategory.automation, 3),
-    ("Virtual-Machine Workflows", SkillCategory.automation, 3),
+    ("ROS 2", SkillCategory.robotics, 4),
+    ("Gazebo", SkillCategory.robotics, None),
+    ("MATLAB", SkillCategory.robotics, 10),
+    ("Simulink", SkillCategory.robotics, None),
+    ("Robot Simulation", SkillCategory.robotics, None),
+    ("Sensor Integration", SkillCategory.robotics, None),
+    ("Kinematics", SkillCategory.robotics, None),
+    ("Control Systems", SkillCategory.robotics, None),
 
-    ("React", SkillCategory.web_dev, 3),
-    ("FastAPI", SkillCategory.web_dev, 3),
-    ("REST API Design", SkillCategory.web_dev, 3),
-    ("PostgreSQL", SkillCategory.web_dev, 2),
-    ("Containerized Deployment", SkillCategory.web_dev, 3),
+    ("IPv4", SkillCategory.networks, None),
+    ("IPv6", SkillCategory.networks, None),
+    ("TCP/IP", SkillCategory.networks, None),
+    ("DNS", SkillCategory.networks, None),
+    ("DHCP", SkillCategory.networks, None),
+    ("SSH", SkillCategory.networks, None),
+    ("LAN / WAN", SkillCategory.networks, None),
+    ("Routing", SkillCategory.networks, None),
+    ("Switching", SkillCategory.networks, None),
+    ("VLANs", SkillCategory.networks, None),
+    ("Linux Networking", SkillCategory.networks, None),
+    ("Network Security", SkillCategory.networks, None),
+    ("Cisco", SkillCategory.networks, None),
+    ("Fortinet", SkillCategory.networks, None),
 
-    ("Engineering Data Processing", SkillCategory.ml_data, 3),
-    ("SQLite & PostgreSQL", SkillCategory.ml_data, 2),
-    ("Predictive Analytics Research", SkillCategory.ml_data, 2),
-    ("Digital-Twin Concepts", SkillCategory.ml_data, 2),
+    ("React", SkillCategory.web_backend, None),
+    ("FastAPI", SkillCategory.web_backend, None),
+    ("REST APIs", SkillCategory.web_backend, None),
+    ("PostgreSQL", SkillCategory.web_backend, None),
+    ("SQLite", SkillCategory.web_backend, None),
+    ("JSON", SkillCategory.web_backend, None),
+    ("HTML", SkillCategory.web_backend, None),
+    ("CSS", SkillCategory.web_backend, None),
 
-    ("SSH & Secure Access", SkillCategory.cybersecurity, 3),
-    ("Network Security Fundamentals", SkillCategory.cybersecurity, 2),
-    ("Linux Hardening Basics", SkillCategory.cybersecurity, 2),
+    ("Linux", SkillCategory.linux_devops, 5),
+    ("Fedora", SkillCategory.linux_devops, None),
+    ("Git", SkillCategory.linux_devops, 7),
+    ("GitHub", SkillCategory.linux_devops, None),
+    ("Docker", SkillCategory.linux_devops, 6),
+    ("Docker Compose", SkillCategory.linux_devops, None),
+    ("Nginx", SkillCategory.linux_devops, None),
+    ("Reverse Proxy", SkillCategory.linux_devops, None),
+    ("Virtual Machines", SkillCategory.linux_devops, None),
 
-    ("Fedora Linux", SkillCategory.linux_devops, 4),
-    ("Git & GitHub", SkillCategory.linux_devops, 4),
-    ("Docker / Docker Compose", SkillCategory.linux_devops, 3),
-    ("Linux Networking", SkillCategory.linux_devops, 3),
-    ("Reverse Proxy & Deployment", SkillCategory.linux_devops, 3),
-    ("Ubuntu Linux", SkillCategory.linux_devops, 3),
-
-    ("Autodesk Fusion 360", SkillCategory.engineering_tools, 4),
-    ("FDM 3D Printing", SkillCategory.engineering_tools, 4),
-    ("Laser Cutting", SkillCategory.engineering_tools, 4),
-    ("SolidWorks", SkillCategory.engineering_tools, 3),
-    ("Autodesk Inventor", SkillCategory.engineering_tools, 3),
-    ("SLA 3D Printing", SkillCategory.engineering_tools, 3),
-    ("Requirements & Verification", SkillCategory.engineering_tools, 3),
-    ("DFM / DFA / DFx", SkillCategory.engineering_tools, 3),
-    ("ROS 2", SkillCategory.engineering_tools, 2),
-    ("Gazebo", SkillCategory.engineering_tools, 2),
+    ("Pandas", SkillCategory.data_ml, None),
+    ("NumPy", SkillCategory.data_ml, None),
+    ("Matplotlib", SkillCategory.data_ml, None),
+    ("Data Processing", SkillCategory.data_ml, None),
+    ("Predictive Analytics", SkillCategory.data_ml, None),
+    ("Digital Twins", SkillCategory.data_ml, None),
+    ("Data Acquisition", SkillCategory.data_ml, None),
 ]
 
 PROJECTS = [
@@ -233,10 +278,10 @@ PROJECTS = [
         "featured": True,
         "sort_order": 1,
         # Real build photo, served from frontend/public/images/ (gitignored —
-        # see .gitignore). This is currently the only project with a shipped
-        # asset; the rest omit `hero_image` entirely and render the designed
-        # placeholder instead. Omission is the supported state, not a gap to
-        # paper over with a guessed URL — see the images block in seed().
+        # see .gitignore). Projects without a shipped asset omit `hero_image`
+        # entirely and render the designed placeholder instead. Omission is the
+        # supported state, not a gap to paper over with a guessed URL — see the
+        # images block in seed().
         "hero_image": "/images/pokebot-hero.jpg",
         "technologies": [
             "ESP32",
@@ -286,6 +331,7 @@ PROJECTS = [
         "slug": "micro-programming-labs",
         "category": "embedded",
         "github_url": "https://github.com/Rol0a/PrograDeMicros_Lopez231928",
+        "hero_image": "/images/Microcontroller.jpg",
         "demo_url": None,
         "featured": False,
         "sort_order": 2,
@@ -324,7 +370,7 @@ PROJECTS = [
     {
         "slug": "portfolio-platform",
         "category": "software",
-        "github_url": "https://github.com/Rol0a/CV_resume",
+        "github_url": "https://github.com/Rol0a/Portoflio_CV",
         "demo_url": None,
         "featured": True,
         "sort_order": 3,
@@ -373,7 +419,8 @@ PROJECTS = [
     {
         "slug": "quadruped-robot",
         "category": "robotics",
-        "github_url": None,
+        "github_url": "https://github.com/Rol0a/QuadrupedBot",
+        "hero_image": "/images/Quadrupedbot.jpeg",
         "demo_url": None,
         "featured": True,
         "sort_order": 4,
@@ -403,6 +450,7 @@ PROJECTS = [
     },
     {
         "slug": "electrodynamic-tether-deorbit",
+        "status": "in_development",
         "category": "academic_research",
         "github_url": None,
         "demo_url": None,
@@ -434,6 +482,7 @@ PROJECTS = [
     },
     {
         "slug": "fedora-linux-environment",
+        "status": "in_development",
         "category": "devops_infra",
         "github_url": None,
         "demo_url": None,
@@ -604,10 +653,12 @@ async def seed() -> None:
 
         # sort_order comes from list position: the skills endpoint sorts by
         # (category, sort_order), so SKILLS' order is the on-page order.
-        for index, (name, category, proficiency) in enumerate(SKILLS):
+        for index, (name, category, featured_rank) in enumerate(SKILLS):
             existing = (await db.execute(select(Skill).where(Skill.name == name))).scalar_one_or_none()
             if existing is None:
-                db.add(Skill(name=name, category=category, proficiency=proficiency, sort_order=index))
+                db.add(
+                    Skill(name=name, category=category, featured_rank=featured_rank, sort_order=index)
+                )
 
         await db.flush()
 
@@ -621,6 +672,9 @@ async def seed() -> None:
             project = Project(
                 slug=entry["slug"],
                 category=entry["category"],
+                # Defaults to complete — a project only declares a status when
+                # it is *not* finished, so the common case stays uncluttered.
+                status=entry.get("status", "complete"),
                 github_url=entry["github_url"],
                 demo_url=entry["demo_url"],
                 featured=entry["featured"],

@@ -9,10 +9,14 @@ export type ProjectCategory =
   | "devops_infra"
   | "academic_research";
 
+/** Mirrors backend `ProjectStatus` — see backend/app/models/project.py. */
+export type ProjectStatus = "complete" | "in_development";
+
 export interface ProjectListItem {
   id: string;
   slug: string;
   category: ProjectCategory;
+  status: ProjectStatus;
   githubUrl: string | null;
   demoUrl: string | null;
   featured: boolean;
@@ -37,6 +41,7 @@ export interface ProjectDetail {
   id: string;
   slug: string;
   category: ProjectCategory;
+  status: ProjectStatus;
   githubUrl: string | null;
   demoUrl: string | null;
   featured: boolean;
@@ -59,22 +64,27 @@ export interface ProjectDetail {
 export type SkillCategory =
   | "programming"
   | "embedded_systems"
-  | "electronics"
-  | "automation"
-  | "web_dev"
-  | "ml_data"
-  | "cybersecurity"
+  | "hardware_design"
+  | "robotics"
+  | "networks"
+  | "web_backend"
   | "linux_devops"
-  | "engineering_tools";
+  | "data_ml";
 
 export interface Skill {
   name: string;
-  proficiency: number | null;
 }
 
 export interface SkillGroup {
   category: SkillCategory;
   skills: Skill[];
+}
+
+/** Featured is a curated cross-section, not a ninth category — see the backend
+ *  `SkillCategory` docstring for why it isn't an enum value. */
+export interface Skills {
+  featured: Skill[];
+  groups: SkillGroup[];
 }
 
 export interface AnalyticsSummary {
@@ -134,9 +144,15 @@ export interface NetworkHealthSample {
   errorsCount: number | null;
 }
 
+export interface ActiveVisitors {
+  count: number;
+  windowMinutes: number;
+}
+
 export interface NetworkHealth {
   latest: NetworkHealthSample | null;
   history: NetworkHealthSample[];
+  activeVisitors: ActiveVisitors;
 }
 
 export type Granularity = "day" | "week" | "month";

@@ -102,9 +102,20 @@ export default function ProjectDetail() {
   return (
     <article className="page-section">
       {backLink}
-      <span className={styles.category}>{project.category.replace("_", " ")}</span>
+      <span className={styles.badges}>
+        <span className={styles.category}>{project.category.replace("_", " ")}</span>
+        {project.status === "in_development" && (
+          <span className={styles.inDevelopment}>{t("projects.status_in_development")}</span>
+        )}
+      </span>
       <h1 className={styles.title}>{project.title}</h1>
       <p className={styles.desc}>{project.shortDesc}</p>
+
+      {/* Says why there is no repo link below, instead of leaving the absence to
+          be read as an oversight. */}
+      {project.status === "in_development" && (
+        <p className={styles.developmentNote}>{t("projects.in_development_note")}</p>
+      )}
 
       {hero && !imageFailed ? (
         <img

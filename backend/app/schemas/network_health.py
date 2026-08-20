@@ -27,6 +27,28 @@ class NetworkHealthSampleOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ActiveVisitorsOut(BaseModel):
+    """M8 extension — see analytics_service.get_active_visitor_count.
+    window_minutes travels with the count so the frontend never hardcodes a
+    number that only the backend actually enforces.
+    """
+
+    count: int
+    window_minutes: int
+
+
+class NetworkHealthSamples(BaseModel):
+    """NOC-only data — what network_health_service actually owns. Kept
+    separate from NetworkHealthResponse so that service never needs to know
+    about active_visitors, which comes from a different service entirely
+    (see routes/admin.py's get_network_health, the only place these merge).
+    """
+
+    latest: NetworkHealthSampleOut | None
+    history: list[NetworkHealthSampleOut]
+
+
 class NetworkHealthResponse(BaseModel):
     latest: NetworkHealthSampleOut | None
     history: list[NetworkHealthSampleOut]
+    active_visitors: ActiveVisitorsOut

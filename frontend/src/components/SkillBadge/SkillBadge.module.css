@@ -1,0 +1,47 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--color-accent-deep);
+  color: var(--color-on-accent-deep);
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    transform var(--duration-fast) var(--ease-cozy),
+    border-color var(--duration-fast) var(--ease-cozy),
+    background var(--duration-fast) var(--ease-cozy);
+}
+
+/* A 1px lift and a border, nothing more. The spec is explicit that this section
+   is a fast technical index — 78 badges each running their own animation on
+   hover would be noise, and the page has no interaction to reward. */
+.badge:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-primary);
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  /* Brand marks are filled and concept glyphs are stroked, so they carry
+     different optical weight at the same box size. Nudging the stroked set up
+     slightly in opacity is not worth the complexity — both read as one family
+     because everything is monochrome and boxed identically. */
+  color: currentColor;
+}
+
+.name {
+  letter-spacing: 0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge:hover {
+    transform: none;
+  }
+}

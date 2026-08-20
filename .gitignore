@@ -24,6 +24,7 @@ infrastructure/caddy/certs/
 node_modules/
 frontend/dist/
 frontend/coverage/
+*.tsbuildinfo
 *.local
 
 # Python / backend

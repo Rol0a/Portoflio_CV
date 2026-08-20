@@ -1,43 +1,33 @@
 .group {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  background: var(--color-surface);
+  margin-bottom: var(--space-5);
 }
 
+.group:last-child {
+  margin-bottom: 0;
+}
+
+/* Category headings carry clearly more weight than a badge and clearly less
+   than the page's h1 — the spec's hierarchy, and the reason this is a plain
+   sans heading rather than the display serif the h1 uses. */
 .heading {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-contrast);
   margin: 0 0 var(--space-3);
-  font-size: 1.05rem;
-  color: var(--color-primary-dark);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
 }
 
+/* Badges flow and wrap; they never become a one-per-line list except on a
+   genuinely tiny viewport, where the chips themselves are still inline. */
 .list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: var(--space-2);
-}
-
-.skillRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.bar {
-  flex: 1;
-  height: 6px;
-  background: var(--color-bg-alt);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-left: var(--space-3);
-  max-width: 8rem;
-}
-
-.barFill {
-  height: 100%;
-  background: var(--color-primary);
 }

@@ -17,10 +17,9 @@ import {
 import { ApiError, getAdminAnalytics, logout } from "../../services/api";
 import type { AdminAnalytics, Granularity } from "../../types";
 import AdminNav from "./AdminNav";
+import { AXIS_LINE, DATA_1, DATA_2, GRID_LINE, INK_MUTED, SURFACE } from "./palette";
 import styles from "./AdminDashboard.module.css";
 
-const SERIES_1 = "#2a78d6";
-const SERIES_2 = "#eb6834";
 const RANGE_OPTIONS: { days: number; labelKey: string }[] = [
   { days: 7, labelKey: "range_7" },
   { days: 30, labelKey: "range_30" },
@@ -153,15 +152,15 @@ export default function AdminDashboard() {
               <h2 className={styles.chartTitle}>{t("admin.dashboard.chart_visits")}</h2>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={data.timeseries} margin={{ top: 4, right: 12, left: -12, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="var(--grid-line)" />
+                  <CartesianGrid vertical={false} stroke={GRID_LINE} />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
-                    axisLine={{ stroke: "var(--axis-line)" }}
+                    tick={{ fontSize: 11, fill: INK_MUTED }}
+                    axisLine={{ stroke: AXIS_LINE }}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
+                    tick={{ fontSize: 11, fill: INK_MUTED }}
                     axisLine={false}
                     tickLine={false}
                     allowDecimals={false}
@@ -169,34 +168,34 @@ export default function AdminDashboard() {
                   <Tooltip content={<TimeseriesTooltip />} />
                   <Legend
                     wrapperStyle={{ fontSize: 12 }}
-                    formatter={(value) => <span style={{ color: "var(--color-text-muted)" }}>{value}</span>}
+                    formatter={(value) => <span style={{ color: INK_MUTED }}>{value}</span>}
                   />
                   <Line
                     type="monotone"
                     dataKey="pageViews"
                     name={t("admin.dashboard.stat_page_views")}
-                    stroke={SERIES_1}
+                    stroke={DATA_1}
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 4, stroke: "var(--chart-surface)", strokeWidth: 2 }}
+                    activeDot={{ r: 4, stroke: SURFACE, strokeWidth: 2 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="uniqueSessions"
                     name={t("admin.dashboard.stat_unique_sessions")}
-                    stroke={SERIES_2}
+                    stroke={DATA_2}
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 4, stroke: "var(--chart-surface)", strokeWidth: 2 }}
+                    activeDot={{ r: 4, stroke: SURFACE, strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
               <details className={styles.tableToggle}>
-                <summary>View as table</summary>
+                <summary>{t("admin.view_as_table")}</summary>
                 <table>
                   <thead>
                     <tr>
-                      <th scope="col">Date</th>
+                      <th scope="col">{t("admin.dashboard.date")}</th>
                       <th scope="col">{t("admin.dashboard.stat_page_views")}</th>
                       <th scope="col">{t("admin.dashboard.stat_unique_sessions")}</th>
                     </tr>
@@ -225,18 +224,18 @@ export default function AdminDashboard() {
                     layout="vertical"
                     margin={{ top: 4, right: 24, left: 8, bottom: 0 }}
                   >
-                    <CartesianGrid horizontal={false} stroke="var(--grid-line)" />
+                    <CartesianGrid horizontal={false} stroke={GRID_LINE} />
                     <XAxis type="number" hide allowDecimals={false} />
                     <YAxis
                       type="category"
                       dataKey="title"
                       width={110}
-                      tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
+                      tick={{ fontSize: 11, fill: INK_MUTED }}
                       axisLine={false}
                       tickLine={false}
                     />
-                    <Tooltip content={<BarTooltip />} cursor={{ fill: "var(--color-bg-alt)" }} />
-                    <Bar dataKey="views" fill={SERIES_1} radius={[0, 4, 4, 0]} maxBarSize={20} />
+                    <Tooltip content={<BarTooltip />} cursor={{ fill: "#f4f4f5" }} />
+                    <Bar dataKey="views" fill={DATA_1} radius={[0, 4, 4, 0]} maxBarSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -247,38 +246,7 @@ export default function AdminDashboard() {
               {totalLangSessions === 0 ? (
                 <p>{t("common.empty")}</p>
               ) : (
-                <>
-                  <div className={styles.langLegend}>
-                    <span className={styles.langLegendItem}>
-                      <span className={styles.langSwatch} style={{ background: SERIES_1 }} />
-                      EN ({data.summary.languageDistribution.en ?? 0})
-                    </span>
-                    <span className={styles.langLegendItem}>
-                      <span className={styles.langSwatch} style={{ background: SERIES_2 }} />
-                      ES ({data.summary.languageDistribution.es ?? 0})
-                    </span>
-                  </div>
-                  <div className={styles.langBar} role="img" aria-label={`EN ${data.summary.languageDistribution.en ?? 0}, ES ${data.summary.languageDistribution.es ?? 0}`}>
-                    <div
-                      className={styles.langSegment}
-                      style={{
-                        background: SERIES_1,
-                        width: `${((data.summary.languageDistribution.en ?? 0) / totalLangSessions) * 100}%`,
-                      }}
-                    >
-                      {Math.round(((data.summary.languageDistribution.en ?? 0) / totalLangSessions) * 100)}%
-                    </div>
-                    <div
-                      className={styles.langSegment}
-                      style={{
-                        background: SERIES_2,
-                        width: `${((data.summary.languageDistribution.es ?? 0) / totalLangSessions) * 100}%`,
-                      }}
-                    >
-                      {Math.round(((data.summary.languageDistribution.es ?? 0) / totalLangSessions) * 100)}%
-                    </div>
-                  </div>
-                </>
+                <LanguageSplit distribution={data.summary.languageDistribution} total={totalLangSessions} />
               )}
             </div>
 
@@ -313,5 +281,39 @@ function StatTile({ label, value }: { label: string; value: number }) {
       <p className={styles.statLabel}>{label}</p>
       <p className={styles.statValue}>{value.toLocaleString()}</p>
     </div>
+  );
+}
+
+interface LanguageSplitProps {
+  distribution: Record<string, number>;
+  total: number;
+}
+
+function LanguageSplit({ distribution, total }: LanguageSplitProps) {
+  const rows = [
+    { code: "EN", count: distribution.en ?? 0, color: DATA_1 },
+    { code: "ES", count: distribution.es ?? 0, color: DATA_2 },
+  ];
+
+  return (
+    <>
+      <div className={styles.langLegend}>
+        {rows.map((row) => (
+          <span key={row.code} className={styles.langLegendItem}>
+            <span className={styles.langSwatch} style={{ background: row.color }} />
+            {row.code} {row.count} · {Math.round((row.count / total) * 100)}%
+          </span>
+        ))}
+      </div>
+      <div className={styles.langBar} role="img" aria-label={rows.map((row) => `${row.code} ${row.count}`).join(", ")}>
+        {rows.map((row) => (
+          <div
+            key={row.code}
+            className={styles.langSegment}
+            style={{ background: row.color, width: `${(row.count / total) * 100}%` }}
+          />
+        ))}
+      </div>
+    </>
   );
 }

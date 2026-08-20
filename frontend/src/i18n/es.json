@@ -6,10 +6,9 @@
   },
   "nav": {
     "home": "Inicio",
-    "about": "Sobre mí",
+    "experience": "Experiencia",
     "skills": "Habilidades",
     "projects": "Proyectos",
-    "certifications": "Certificaciones",
     "contact": "Contacto"
   },
   "home": {
@@ -35,35 +34,108 @@
     "closing_body": "Me interesan oportunidades de ingeniería y software en sistemas embebidos, robótica, electrónica, automatización, aeroespacial, telecomunicaciones, desarrollo full-stack e I+D técnica. Si estás construyendo un sistema que combina software con hardware real, datos o restricciones de ingeniería, me gustaría conversarlo.",
     "closing_cta": "Ponte en contacto"
   },
-  "about": {
-    "eyebrow": "La Versión Corta",
-    "title": "Sobre Mí",
-    "body": [
-      "Soy estudiante de Ingeniería Mecatrónica y Electrónica en la Universidad del Valle de Guatemala, con experiencia en sistemas embebidos, desarrollo de software, I+D aeroespacial, robótica, electrónica, fabricación digital, redes e investigación en ingeniería.",
-      "Ese trabajo me ha llevado de los laboratorios universitarios en Guatemala a organizaciones aeroespaciales en Boulder, Colorado, y a programas internacionales de la industria espacial. He desarrollado firmware embebido, integrado sensores e interfaces de comunicación, diseñado sistemas electrónicos y mecánicos, apoyado hardware biomédico de vuelo, trabajado en conceptos de CubeSat y desorbitado, automatizado flujos de trabajo de ingeniería, mantenido entornos Linux y construido infraestructura de software full-stack.",
-      "Abordo la ingeniería como un problema de sistemas y no como un conjunto de disciplinas aisladas. Un producto útil suele exigir entender al mismo tiempo la estructura mecánica, la electrónica, el firmware, las comunicaciones, la arquitectura de software, las restricciones de manufactura, el proceso de pruebas y los requisitos del usuario. Esa mirada multidisciplinaria es el hilo común de todo lo que hay aquí."
-    ],
+  "experience": {
+    "eyebrow": "Dónde He Trabajado",
+    "title": "Experiencia",
+    "intro": "Ingeniería Mecatrónica y Electrónica en la Universidad del Valle de Guatemala, y cinco roles que van desde I+D aeroespacial en Boulder, Colorado hasta laboratorios de CubeSats y fabricación digital en la Ciudad de Guatemala. Un hilo conductor: la ingeniería entendida como un problema de sistemas — mecánica, electrónica, firmware, comunicaciones, arquitectura de software y validación comprendidas al mismo tiempo, no como disciplinas separadas que se pasan el trabajo entre sí.",
     "meta_title": "Datos rápidos",
     "location": "Ubicación: Ciudad de Guatemala, Guatemala",
     "email": "Correo: mlopez2018ig@gmail.com",
-    "education": "Formación: Ing. Mecatrónica y Electrónica, Universidad del Valle de Guatemala (2023–presente)",
-    "focus": "Enfoque: Sistemas embebidos, robótica, electrónica, infraestructura Linux, aeroespacial"
+    "education": "Educación: Licenciatura en Ingeniería Mecatrónica y Electrónica, Universidad del Valle de Guatemala (2023–presente)",
+    "focus": "Enfoque: Sistemas embebidos, robótica, electrónica, infraestructura Linux, aeroespacial",
+    "expand_hint": "Selecciona un rol para ver en qué consistió",
+    "roles": [
+      {
+        "id": "iaf-ipmc",
+        "role": "Delegado — Líder de Resiliencia de la Cadena de Suministro",
+        "org": "IAF IPMC Young Professionals Leadership Development Programme",
+        "place": "Remoto / Global",
+        "period": "2025–2026",
+        "summary": "Seleccionado para la cohorte 2026 del programa para desarrollar metodologías de análisis y soporte a la toma de decisiones en proyectos tecnológicos complejos.",
+        "highlights": [
+          "Analicé grandes volúmenes de información técnica para identificar riesgos operativos y proponer metodologías de monitoreo para sistemas distribuidos.",
+          "Evalué tecnologías como inteligencia artificial, machine learning, gemelos digitales y analítica predictiva para el monitoreo de procesos y la definición de indicadores de desempeño.",
+          "Desarrollé metodologías para modelar flujos de información, dependencias entre sistemas y resiliencia operacional en proyectos de ingeniería.",
+          "Coautor de documentación técnica orientada a la aplicación de herramientas digitales para el monitoreo y análisis de proyectos."
+        ]
+      },
+      {
+        "id": "jaguar-space",
+        "role": "Asistente de Gerencia de Investigación y Desarrollo",
+        "org": "Jaguar Space LLC.",
+        "place": "Boulder, CO",
+        "period": "2024–2026",
+        "summary": "Participé en el desarrollo de soluciones tecnológicas traduciendo requerimientos de clientes en especificaciones técnicas, arquitectura de sistemas y planes de implementación.",
+        "highlights": [
+          "Desarrollé herramientas en Python para automatizar procesos de ingeniería, análisis de datos y generación de información técnica utilizada durante el desarrollo de productos.",
+          "Colaboré con equipos multidisciplinarios en interfaces entre hardware y software, documentando el comportamiento de sistemas y apoyando procesos de integración.",
+          "Integré y diagnostiqué interfaces de comunicación embebida utilizando UART, comunicaciones seriales, sensores y herramientas de diagnóstico para la validación de sistemas.",
+          "Elaboré documentación técnica incluyendo especificaciones funcionales, procedimientos de validación, reportes de ingeniería y documentación de productos siguiendo procesos estructurados de desarrollo."
+        ]
+      },
+      {
+        "id": "dhive-makerlab",
+        "role": "Asistente de Ingeniería",
+        "org": "D-HIVE MakerLab UVG",
+        "place": "Ciudad de Guatemala",
+        "period": "2024–2025",
+        "summary": "Mantuve operativo un laboratorio de fabricación digital — los equipos, los entornos Linux detrás de ellos y los estudiantes que usaban ambos.",
+        "highlights": [
+          "Brindé soporte técnico para equipos de fabricación digital, diagnosticando fallas de calibración, firmware e integración entre hardware y software.",
+          "Administré ambientes de desarrollo basados en Linux y sistemas embebidos necesarios para el funcionamiento de los equipos de laboratorio.",
+          "Elaboré manuales técnicos, procedimientos operativos y guías de resolución de problemas para optimizar la disponibilidad de los equipos.",
+          "Asesoré a estudiantes en programación de microcontroladores, integración de sistemas embebidos y desarrollo de aplicaciones.",
+          "Documenté incidencias técnicas y propuse mejoras en los flujos de trabajo para incrementar la eficiencia operativa del laboratorio."
+        ]
+      },
+      {
+        "id": "uvg-aerospace",
+        "role": "Miembro",
+        "org": "Laboratorio Aeroespacial UVG",
+        "place": "Ciudad de Guatemala",
+        "period": "2024–2025",
+        "summary": "Arquitectura de firmware para subsistemas tipo CubeSat, desde máquinas de estados hasta los protocolos entre ellos.",
+        "highlights": [
+          "Diseñé la arquitectura de firmware para subsistemas tipo CubeSat, incluyendo máquinas de estados, control de periféricos, telemetría y lógica de operación.",
+          "Desarrollé propuestas de firmware para integración de sensores, control PWM, drivers H-Bridge y comunicación serial entre módulos embebidos.",
+          "Diseñé interfaces de comunicación entre subsistemas utilizando protocolos UART e I²C, documentando las especificaciones de integración.",
+          "Utilicé control de versiones mediante Git para gestionar cambios en firmware, documentación técnica e integración entre hardware y software.",
+          "Elaboré diagramas de arquitectura de software, documentación de interfaces y procedimientos de prueba para la integración de sistemas."
+        ]
+      },
+      {
+        "id": "bioserve",
+        "role": "Practicante de Ingeniería",
+        "org": "BioServe Space Technologies",
+        "place": "Boulder, CO",
+        "period": "2024",
+        "summary": "Sistemas embebidos para monitoreo ambiental y adquisición automática de datos durante experimentos biomédicos de vuelo espacial.",
+        "highlights": [
+          "Programé sistemas embebidos para monitoreo ambiental y adquisición automática de datos durante experimentos biomédicos.",
+          "Participé en la integración de sensores con plataformas de adquisición de datos para experimentos de investigación espacial.",
+          "Ejecuté pruebas funcionales y procesos de validación sobre sistemas electrónicos antes de su integración.",
+          "Documenté procedimientos de prueba, resultados e integración de hardware y software."
+        ]
+      }
+    ]
   },
   "skills": {
     "eyebrow": "Con Qué Trabajo",
-    "title": "Habilidades",
-    "intro": "Los lenguajes, plataformas y herramientas que realmente uso, agrupados por dónde aparecen en el trabajo. Las barras reflejan una autoevaluación de profundidad, no certificaciones.",
+    "title": "Habilidades y Certificaciones",
+    "intro": "Un mapa rápido del stack técnico — los lenguajes, plataformas y herramientas que realmente utilizo, agrupados por disciplina de ingeniería en lugar de por el tipo de cosa que es cada uno. Sin puntajes de dominio: los proyectos son la evidencia de profundidad. La formación formal y los reconocimientos siguen más abajo.",
     "categories": {
+      "featured": "Destacados",
       "programming": "Programación",
       "embedded_systems": "Sistemas Embebidos",
-      "electronics": "Electrónica",
-      "automation": "Automatización",
-      "web_dev": "Desarrollo Web",
-      "ml_data": "ML y Datos",
-      "cybersecurity": "Ciberseguridad",
+      "hardware_design": "Diseño de Hardware",
+      "robotics": "Robótica",
+      "networks": "Redes",
+      "web_backend": "Web y Backend",
       "linux_devops": "Linux y DevOps",
-      "engineering_tools": "Herramientas de Ingeniería"
-    }
+      "data_ml": "Datos y ML"
+    },
+    "section_certifications": "Certificaciones y Reconocimientos",
+    "badge_list": "Habilidades de {{category}}"
   },
   "projects": {
     "eyebrow": "La Lista Completa",
@@ -87,7 +159,9 @@
       "testing_desc": "Pruebas",
       "results": "Resultados",
       "lessons": "Lecciones Aprendidas"
-    }
+    },
+    "status_in_development": "En desarrollo",
+    "in_development_note": "Este proyecto se encuentra en desarrollo activo. La documentación y el repositorio se publicarán aquí conforme avance."
   },
   "certifications": {
     "eyebrow": "Credenciales",
@@ -113,7 +187,7 @@
   },
   "footer": {
     "rights": "Todos los derechos reservados.",
-    "disclaimer": "Este servidor aún está en construcción y pronto migrará a infraestructura autoalojada, por lo que este enlace puede cambiar."
+    "disclaimer": "Auto-alojado mediante Tailscale Funnel"
   },
   "not_found": {
     "title": "Página no encontrada",
@@ -148,12 +222,15 @@
       "chart_language": "Distribución de Idioma",
       "recent_activity": "Actividad Reciente",
       "demo_data_notice": "Mostrando datos de demostración — el seguimiento real de visitantes (M8) aún no está implementado.",
-      "no_recent_activity": "Sin actividad reciente."
+      "no_recent_activity": "Sin actividad reciente.",
+      "date": "Fecha"
     },
     "network_health": {
       "title": "Estado de la Red",
       "logout": "Cerrar Sesión",
       "notice": "Muestreado por el servicio NOC independiente cada ~30 segundos.",
+      "active_visitors_title": "Visitantes Activos Ahora",
+      "active_visitors_window": "en los últimos {{count}} minutos",
       "no_data": "Aún no hay muestras — el servicio NOC empieza a sondear poco después de iniciar.",
       "last_updated": "Última actualización",
       "services_title": "Estado de Servicios",
@@ -169,7 +246,9 @@
       "disk": "Disco",
       "requests": "Solicitudes",
       "errors": "Errores",
-      "unreachable": "Inalcanzable"
-    }
+      "unreachable": "Inalcanzable",
+      "time": "Hora"
+    },
+    "view_as_table": "Ver como tabla"
   }
 }

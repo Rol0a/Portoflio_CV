@@ -1,5 +1,33 @@
+/* Certification cards still want a card grid. */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: var(--space-4);
+}
+
+/* Skills do not. The old two-column card grid put "Programming" beside
+   "Embedded Systems" and left the reader zig-zagging; a single vertical stack
+   of full-width badge bands is what the spec asks for and reads top-to-bottom
+   at any width. */
+.bands {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Two stacked bands on one page now, so each needs its own heading. The top
+   margin is deliberately larger than the grid gap — the break between skills
+   and credentials should read as a section change, not another card row. */
+.sectionTitle {
+  font-size: 1.5rem;
+  margin: var(--space-6) 0 var(--space-2);
+}
+
+.sectionTitle:first-of-type {
+  margin-top: 0;
+}
+
+.sectionIntro {
+  color: var(--color-text-muted);
+  max-width: 44rem;
+  margin: 0 0 var(--space-4);
 }

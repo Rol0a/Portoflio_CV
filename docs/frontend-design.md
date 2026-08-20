@@ -159,22 +159,92 @@ its light value in the base rule and its dark value in both of the above
 scopes — never only inside a media query, or the un-stamped state (most
 visitors) renders wrong.
 
-### What's deliberately excluded from this system
+### The admin shell is monochrome, and that's the exclusion
 
-The **admin analytics dashboard's chart colors** (`AdminDashboard.module.css`
-— `--series-1`, `--series-2`, `--chart-surface`, etc.) are **not** part of
-this palette. They're a separate, functional data-visualization palette,
-validated for colorblind-safe categorical separation via the `dataviz`
-skill's contrast checker. Don't "fix" them to match the brand palette — they
-were chosen for a different reason (accessible data encoding, not brand
-warmth) and re-theming them would silently break that validation. The
-dashboard's *chrome* (backgrounds, borders, body text) does use the shared
-tokens and updates automatically with the rest of the site.
+Everything above describes the **public** site. The admin screens — the
+analytics dashboard, the NOC network-health page, and the login form — opt out
+of the brand palette entirely and render **black on white**, in both light and
+dark, regardless of the visitor's preference.
 
-`AdminDashboard.module.css` carries a one-line comment above its
-`--series-*` block pointing back to this section, so a contributor who lands
-in that file directly — without having read this doc first — sees the
-exclusion before "fixing" it.
+That is a commitment, not an oversight. The entire job of those pages is to
+make data legible at a glance; a cream ground, a mint accent on the active nav
+tab and a teal heading are all competing with a metric for the same attention.
+So the chrome gives its color up, and the rule becomes easy to check:
+
+> **On an admin page, if a colored thing is not data, it is a bug.**
+
+Color survives on exactly four things: stat-tile values, chart series, the
+status dots on the NOC service tiles, and the active-visitor count. Buttons,
+borders, nav tabs, headings, table rules and body text are all ink.
+
+**How it's wired.** `App.tsx` stamps `data-admin` on `<html>` for any `/admin*`
+route, and `styles/global.css` closes with a `:root[data-admin]` block that
+redefines the same `--color-*` tokens every component already reads. Stamping
+the document root rather than each page's own `<section>` is the point — it
+takes the shared header and footer with it, instead of framing a black-and-white
+dashboard in cream. That block sits *after* both dark-mode scopes deliberately:
+same specificity, later source order, so it wins in either direction.
+
+Because the tokens are shared, no admin component needed rewriting to become
+monochrome — `AdminDashboard.module.css` and friends consume `--color-surface`,
+`--color-border` and `--color-text` exactly as before and simply resolve to
+different values. The only edits were the places that had hardcoded a color.
+
+### The admin data palette
+
+The admin screens define their own data colors in that same `:root[data-admin]`
+block, and mirror them as literal hexes in `frontend/src/pages/admin/palette.ts`.
+
+**The mirror is not duplication for its own sake.** Recharts writes colors into
+SVG *presentation attributes* (`stroke="…"`, `fill="…"`), and `var(--token)` is
+never resolved there — presentation attributes don't run the custom-property
+cascade. Charts therefore need literal hexes; the surrounding chrome reads the
+CSS. Change one, change both. (The pre-existing `stroke="var(--grid-line)"`
+attributes in the chart code were silently doing nothing for this exact reason;
+they now pass the constants.)
+
+| Token / constant | Hex | Used for |
+|---|---|---|
+| `--data-1` / `DATA_1` | `#2a78d6` | Page views, CPU, requests, stat-tile values, EN |
+| `--data-2` / `DATA_2` | `#eb6834` | Unique sessions, memory, ES |
+| `--data-3` / `DATA_3` | `#1baf7a` | Disk |
+| `--status-good` | `#0ca30c` | Service up, active visitors |
+| `--status-warning` | `#fab219` | Service degraded |
+| `--status-critical` | `#d03b3b` | Service down, errors, form errors |
+
+These are slots 1–3 of the `dataviz` skill's reference categorical palette plus
+its fixed status palette, **validated with that skill's checker** against a pure
+white surface on the all-pairs pairlist:
+
+```
+node scripts/validate_palette.js "#2a78d6,#eb6834,#1baf7a" --mode light \
+  --surface "#ffffff" --pairs all
+```
+
+worst CVD ΔE 9.2 (deutan), worst normal-vision ΔE 24.0, and one WARN: aqua
+measures **2.82:1** on white, under the 3:1 bar for a mark. The documented
+relief for that WARN is a readable table alongside the chart, which is why the
+NOC resources chart now ships a `<details>` table view — that table is load-
+bearing, not a convenience, so don't remove it while `DATA_3` is in the chart.
+
+Two things this replaced, both real defects rather than taste:
+
+- **Disk was `#8a63d2` violet.** Against CPU's blue it measured a deutan ΔE of
+  **1.0** — the same line, for a red-green colorblind reader — and 12.0 even
+  with full color vision. It moved to the aqua slot *and* gained a dash pattern,
+  so the series are separable on two channels rather than one.
+- **The NOC status pills were solid fills with white text.** White on
+  `#f08c00` amber measures **1.8:1**. They're now outlined pills carrying a
+  colored dot, a glyph and the word — three channels, with the text itself at
+  full contrast in ink.
+
+Likewise the language-split bar no longer prints its percentages in white
+*inside* the colored segments (3.8:1, and ink where the rule says data); the
+numbers moved out to the legend and wear text tokens.
+
+**Don't re-theme any of this to match the brand palette.** These values were
+chosen for accessible data encoding, and the specific numbers above are what
+justify them. If you change one, re-run the validator.
 
 ## 4. Typography
 
@@ -231,8 +301,8 @@ patterns live locally in `frontend/src/components/motion/`, built on the
   scrolled to. Used for section headings and, on `ProjectDetail`, each
   case-study section.
 - **`AnimatedGroup`** — staggers a grid of children into view as a wave
-  rather than a flat fade. Used for every card grid (projects, certifications,
-  skills).
+  rather than a flat fade. Used for every card grid (projects, certifications)
+  and for the vertical stack of skill bands.
 - **`TextEffect`** — word-by-word blur+rise reveal. Used **once**, on the
   Home hero headline — this effect is a signature moment, not a default;
   don't sprinkle it on every heading.
@@ -409,30 +479,53 @@ pages — it's a five-minute pass, and it's the cheapest place to catch a
    itself still renders the plain `ProjectCard` grid (§7's standard
    container, no full-bleed/sticky treatment) — the pinned showcase is a
    Home-only moment, same as `.fullBleed`/`.decor`.
-3. **Certifications showcase** — same data-flow pattern, linking to
-   `/certifications`.
+3. **Certifications showcase** — same data-flow pattern, linking to the
+   certifications half of `/skills`.
 4. **Closing CTA** — a dark band (`--color-accent-deep`) inviting contact,
    linking to `/contact`.
 
-Every other page (`/projects`, `/certifications`, `/skills`, `/about`,
-`/contact`) is a conventional single-purpose page inside the standard
-container — Home is the only page that gets the full-bleed scroll treatment.
-`/projects` and `/certifications` both exist as dedicated full-list pages
-*and* as featured showcases on Home — don't remove either; they serve
-different visitors (browsing everything vs. skimming the highlights).
+Every other page (`/projects`, `/skills`, `/experience`, `/contact`) is a
+conventional single-purpose page inside the standard container — Home is the
+only page that gets the full-bleed scroll treatment. `/projects` and the
+certifications band of `/skills` both exist as full lists *and* as featured
+showcases on Home — don't remove either; they serve different visitors
+(browsing everything vs. skimming the highlights).
+
+**Two pages were merged away, and their URLs still resolve.** `/about` became
+`/experience`, and `/certifications` folded into the bottom of `/skills`.
+`App.tsx` keeps a `<Navigate replace>` route for each old path rather than
+letting them 404 — those URLs are the ones already sitting in a browser
+history, a CV PDF, or a LinkedIn post. `replace` keeps the dead URL out of the
+back stack, so Back from `/experience` goes where the visitor came from rather
+than bouncing off the redirect.
 
 **Every non-Home page opens with `PageHeader`** (§10: eyebrow + `h1` +
-optional intro, InView-revealed) — this is what gives `/about`, `/skills`,
-`/projects`, `/certifications`, and `/contact` the same considered opening
+optional intro, InView-revealed) — this is what gives
+`/experience`, `/skills`, `/projects`, and `/contact` the same considered opening
 beat Home's section heads have, instead of a bare `<h1>` sitting flush under
 the sticky header. Two of these pages pair it with a secondary content panel
 on wide viewports rather than leaving the page lopsided next to a short form
 or a couple of paragraphs:
 
-- **About** — bio paragraph beside a "Quick facts" card (location, email).
+- **Experience** — the role timeline beside a sticky "Quick facts" card
+  (location, email, education, focus).
 - **Contact** — the form beside a "Find me elsewhere" card, reusing the same
-  location/email strings as About plus the footer's GitHub link, so nothing
-  in that panel is invented content specific to the Contact page.
+  location/email strings as Experience plus the footer's GitHub link, so
+  nothing in that panel is invented content specific to the Contact page.
+
+**The Experience timeline is an accordion, and its data is static.** Roles live
+in `i18n/{en,es}.json` under `experience.roles`, not in the database — five
+entries that change once or twice a year don't earn a model, a migration, a
+route and a schema, and authoring them in the bundles makes them bilingual by
+construction. `Experience.tsx` guards the array with a type predicate anyway:
+a malformed or half-translated entry is dropped rather than blanking the page.
+
+One panel is open at a time and the newest role opens on arrival, so the page
+never lands as a wall of collapsed headers. State keys on the locale-independent
+`id`, so switching language keeps the same role open. Each header is a real
+`<button>` with `aria-expanded`; the height animation runs through
+`AnimatePresence` and collapses to a true `0` because the padding lives on an
+inner wrapper rather than on the animated element.
 
 Both collapse to a single column under `max-width: 640px` /
 `max-width: 720px` respectively (their own module CSS, not the global
@@ -465,9 +558,65 @@ new content.
 | `ProjectShowcase` | Home-only pinned two-column project story per featured project — sticky text + numeral beside a visual (§9) |
 | `ProjectCard` | Summary card — category, title, description, tech chips; `useTilt` mouse-follow tilt + sheen |
 | `CertificationCard` | Summary card — issuer badge/initials, title, issue date, credential link; same `useTilt` treatment |
-| `SkillCategory` | Category heading + skill list with `scaleX`-animated proficiency bars |
+| `SkillCategory` | One labelled band of skill badges — takes a heading string, not a category enum, so the Featured row can reuse it (§10.1) |
+| `SkillBadge` | One technology as a compact chip: inline monochrome mark + short name (§10.1) |
 | `StatCounter` | One `useCountUp` figure + label — the Home stats row is three of these |
 | `LanguageSwitcher` | EN/ES toggle — active state uses `--color-accent-deep`, not the mint accent, to keep the mint reserved for primary calls to action |
+
+### 10.1 Skill badges
+
+The Skills page is a **technical index**, not a self-assessment. It is a
+vertical stack of labelled bands; each band is a row of chips that wrap
+naturally, and each chip is a monochrome mark plus a short name.
+
+**What was removed, and why it shouldn't come back:**
+
+- **Proficiency bars.** A self-assessed 3/5 beside "SolidWorks" told a reader
+  nothing actionable and invited a comparison the data couldn't support. The
+  `proficiency` column is dropped, not merely hidden — the projects are the
+  evidence of depth.
+- **The two-column card grid.** It put "Programming" beside "Embedded Systems"
+  and made the reader zig-zag. Full-width bands read straight down at any width.
+- **Compound names.** "PWM & Motor Control" is two competencies in one chip;
+  it's now two chips. Same for "Bluetooth & Serial Links".
+
+**Categories name disciplines, not kinds of thing.** The old set
+(`electronics`, `automation`, `engineering_tools`, `cybersecurity`) scattered
+one competency across three headings — Fusion 360 under engineering_tools, PCB
+design under electronics, DFM under engineering_tools again — so nothing added
+up to "hardware design". See the `SkillCategory` docstring in
+`backend/app/models/skill.py`; **its declaration order is the on-page section
+order**, because Postgres sorts an enum column by the type's declared order.
+
+**Featured is a flag, not a category.** `skills.name` is UNIQUE, so a Featured
+*category* would need Python and Docker to exist twice. It's
+`skills.featured_rank` — one nullable integer carrying both facts: NULL means
+not featured, and any value is that badge's position in the row.
+
+**Icons are inlined, in two families** (`components/SkillBadge/icons.ts`):
+
+- **Filled** — real brand marks lifted verbatim from Simple Icons (CC0),
+  which ships each as a single path on a 24×24 box. Regenerate from
+  `node_modules/simple-icons/icons/<slug>.svg`; never hand-edit a path.
+- **Stroked** — hand-authored glyphs for engineering concepts with no brand
+  mark (UART, PWM, VLANs, kinematics), same 24×24 box at a 1.75 stroke.
+
+Nothing is fetched at runtime: the site runs behind a strict CSP and a
+Tailscale Funnel, so a CDN icon font or remote sprite would be a third-party
+request and a single point of failure on every load. **Never force a company
+logo onto a generic concept** — Altium, MATLAB, Simulink and Gazebo have no
+Simple Icons mark and correctly take concept glyphs rather than a look-alike.
+
+`components/SkillBadge/skillIcons.ts` maps skill *name* → icon key. Coupling
+display to a data value is a real tradeoff, taken deliberately: the alternative
+is an `icon` column, which turns renaming a skill into a migration. A name with
+no entry falls back to a neutral mark, so a rename degrades to a plain badge
+rather than a crash.
+
+**The page is lazy-loaded.** Those icon paths are ~43kB raw; statically imported
+they put **20kB gzipped** into the entry bundle for a route most visitors never
+open. `App.tsx` splits it for the same reason it splits recharts — measured, not
+assumed: entry went 152.7kB → 132.2kB gzipped.
 
 New showcase-style content (a new "Talks" or "Writing" section, say) should
 follow the same shape: a `*Card` component in `components/`, a `use*` data

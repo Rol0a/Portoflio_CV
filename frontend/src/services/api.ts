@@ -8,6 +8,7 @@ import type {
   ProjectDetail,
   ProjectListItem,
   SkillGroup,
+  Skills,
 } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -39,6 +40,7 @@ interface ProjectListItemResponse {
   id: string;
   slug: string;
   category: ProjectListItem["category"];
+  status: ProjectListItem["status"];
   github_url: string | null;
   demo_url: string | null;
   featured: boolean;
@@ -52,6 +54,7 @@ interface ProjectDetailResponse {
   id: string;
   slug: string;
   category: ProjectDetail["category"];
+  status: ProjectDetail["status"];
   github_url: string | null;
   demo_url: string | null;
   featured: boolean;
@@ -72,7 +75,8 @@ interface ProjectDetailResponse {
 }
 
 interface SkillsResponse {
-  categories: { category: SkillGroup["category"]; skills: { name: string; proficiency: number | null }[] }[];
+  featured: { name: string }[];
+  categories: { category: SkillGroup["category"]; skills: { name: string }[] }[];
 }
 
 function mapProjectListItem(item: ProjectListItemResponse): ProjectListItem {
@@ -80,6 +84,7 @@ function mapProjectListItem(item: ProjectListItemResponse): ProjectListItem {
     id: item.id,
     slug: item.slug,
     category: item.category,
+    status: item.status,
     githubUrl: item.github_url,
     demoUrl: item.demo_url,
     featured: item.featured,
@@ -95,6 +100,7 @@ function mapProjectDetail(item: ProjectDetailResponse): ProjectDetail {
     id: item.id,
     slug: item.slug,
     category: item.category,
+    status: item.status,
     githubUrl: item.github_url,
     demoUrl: item.demo_url,
     featured: item.featured,
@@ -145,12 +151,15 @@ export async function getProject(slug: string, locale: string): Promise<ProjectD
   }
 }
 
-export async function getSkills(): Promise<SkillGroup[]> {
+export async function getSkills(): Promise<Skills> {
   const data = await request<SkillsResponse>("/api/v1/skills");
-  return data.categories.map((group) => ({
-    category: group.category,
-    skills: group.skills,
-  }));
+  return {
+    featured: data.featured,
+    groups: data.categories.map((group) => ({
+      category: group.category,
+      skills: group.skills,
+    })),
+  };
 }
 
 interface CertificationResponse {
@@ -289,9 +298,15 @@ interface NetworkHealthSampleResponse {
   errors_count: number | null;
 }
 
+interface ActiveVisitorsResponse {
+  count: number;
+  window_minutes: number;
+}
+
 interface NetworkHealthResponse {
   latest: NetworkHealthSampleResponse | null;
   history: NetworkHealthSampleResponse[];
+  active_visitors: ActiveVisitorsResponse;
 }
 
 function mapNetworkHealthSample(item: NetworkHealthSampleResponse): NetworkHealthSample {
@@ -320,6 +335,7 @@ export async function getNetworkHealth(): Promise<NetworkHealth> {
   return {
     latest: data.latest ? mapNetworkHealthSample(data.latest) : null,
     history: data.history.map(mapNetworkHealthSample),
+    activeVisitors: { count: data.active_visitors.count, windowMinutes: data.active_visitors.window_minutes },
   };
 }
 

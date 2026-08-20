@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.models.project import ProjectCategory, TechCategory
+from app.models.project import ProjectCategory, ProjectStatus, TechCategory
 
 
 class TechnologyOut(BaseModel):
@@ -22,6 +22,7 @@ class ProjectListItem(BaseModel):
     id: str
     slug: str
     category: ProjectCategory
+    status: ProjectStatus
     github_url: str | None
     demo_url: str | None
     featured: bool
@@ -39,6 +40,7 @@ class ProjectDetail(BaseModel):
     id: str
     slug: str
     category: ProjectCategory
+    status: ProjectStatus
     github_url: str | None
     demo_url: str | None
     featured: bool

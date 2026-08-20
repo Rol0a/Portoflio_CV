@@ -4,13 +4,13 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.network_health import NetworkHealthSample
-from app.schemas.network_health import NetworkHealthResponse, NetworkHealthSampleOut
+from app.schemas.network_health import NetworkHealthSampleOut, NetworkHealthSamples
 
 RETENTION_DAYS = 7
 HISTORY_LIMIT = 120  # ~1 hour at the default 30s poll interval
 
 
-async def get_network_health(db: AsyncSession) -> NetworkHealthResponse:
+async def get_network_health(db: AsyncSession) -> NetworkHealthSamples:
     stmt = select(NetworkHealthSample).order_by(NetworkHealthSample.sampled_at.desc()).limit(HISTORY_LIMIT)
     result = await db.execute(stmt)
     samples = list(result.scalars().all())
@@ -18,7 +18,7 @@ async def get_network_health(db: AsyncSession) -> NetworkHealthResponse:
     history = [NetworkHealthSampleOut.model_validate(sample) for sample in reversed(samples)]
     latest = history[-1] if history else None
 
-    return NetworkHealthResponse(latest=latest, history=history)
+    return NetworkHealthSamples(latest=latest, history=history)
 
 
 async def purge_old_samples(db: AsyncSession) -> None:

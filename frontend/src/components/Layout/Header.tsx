@@ -7,10 +7,9 @@ import styles from "./Header.module.css";
 
 const NAV_ITEMS = [
   { to: "/", key: "home", end: true },
-  { to: "/about", key: "about", end: false },
+  { to: "/experience", key: "experience", end: false },
   { to: "/skills", key: "skills", end: false },
   { to: "/projects", key: "projects", end: false },
-  { to: "/certifications", key: "certifications", end: false },
   { to: "/contact", key: "contact", end: false },
 ] as const;
 
