@@ -233,9 +233,10 @@ PROJECTS = [
         "featured": True,
         "sort_order": 1,
         # Real build photo, served from frontend/public/images/ (gitignored —
-        # see .gitignore). Every other project falls back to the
-        # not-yet-built /uploads pipeline below, which 404s harmlessly into
-        # the placeholder icon.
+        # see .gitignore). This is currently the only project with a shipped
+        # asset; the rest omit `hero_image` entirely and render the designed
+        # placeholder instead. Omission is the supported state, not a gap to
+        # paper over with a guessed URL — see the images block in seed().
         "hero_image": "/images/pokebot-hero.jpg",
         "technologies": [
             "ESP32",
@@ -629,14 +630,31 @@ async def seed() -> None:
             project.translations = [
                 ProjectTranslation(locale=locale, **fields) for locale, fields in entry["translations"].items()
             ]
-            project.images = [
-                ProjectImage(
-                    url=entry.get("hero_image", f"/uploads/images/{entry['slug']}-hero.webp"),
-                    alt_text=entry["translations"][Locale.en]["title"],
-                    is_hero=True,
-                    sort_order=0,
-                )
-            ]
+            # Only record an image row when a real asset exists. The old default
+            # here fabricated `/uploads/images/<slug>-hero.webp` for every
+            # project without one, so the API returned a non-null
+            # hero_image_url, the browser fetched it, nginx 404'd, and the UI
+            # recovered only through the <img> onError path — a runtime patch
+            # for bad data. With no row, hero_image_url is null and both
+            # ProjectShowcase and ProjectDetail render their placeholder
+            # directly: no wasted request, no 404s in the access log.
+            #
+            # A project gains an image by being given a `hero_image` key
+            # pointing at a file that actually ships, never by this seed
+            # guessing a path for it.
+            hero_image = entry.get("hero_image")
+            project.images = (
+                [
+                    ProjectImage(
+                        url=hero_image,
+                        alt_text=entry["translations"][Locale.en]["title"],
+                        is_hero=True,
+                        sort_order=0,
+                    )
+                ]
+                if hero_image
+                else []
+            )
             db.add(project)
 
         await db.flush()
