@@ -819,19 +819,53 @@ Returns aggregate analytics for the dashboard.
     "github_clicks": 89,
     "cv_downloads": 34,
     "contact_clicks": 21,
+    "project_link_clicks": 17,
+    "language_changes": 63,
+    "total_events": 2623,
     "language_distribution": { "en": 340, "es": 72 }
   },
+  "engagement": {
+    "bounce_rate": 0.41,
+    "pages_per_session": 3.7,
+    "avg_events_per_session": 6.4,
+    "avg_session_duration_seconds": 142.5,
+    "returning_sessions": 38
+  },
   "timeseries": [
-    { "date": "2026-08-01", "page_views": 52, "unique_sessions": 14 }
+    { "date": "2026-08-01", "page_views": 52, "unique_sessions": 14, "unique_visitors": 12 }
   ],
   "top_projects": [
     { "slug": "sumobot", "title": "SumoBot", "views": 234 }
   ],
+  "top_pages": [
+    { "path": "/projects", "views": 310, "unique_sessions": 180 }
+  ],
+  "event_breakdown": [
+    { "event_type": "page_view", "count": 1523 }
+  ],
+  "device_breakdown": [
+    { "device_class": "desktop", "sessions": 260 }
+  ],
+  "referrers": [
+    { "host": "linkedin.com", "sessions": 74 },
+    { "host": "direct", "sessions": 210 }
+  ],
+  "hourly_activity": [
+    { "hour": 0, "events": 12 }
+  ],
   "recent_events": [
-    { "event_type": "project_view", "count": 12, "timestamp": "..." }
+    { "event_type": "project_view", "project_slug": "sumobot", "timestamp": "..." }
   ]
 }
 ```
+
+`event_breakdown` always carries all seven event types and `hourly_activity`
+all 24 hours, zero-filled — see §9. `unique_visitors` counts distinct `ip_hash`
+in the bucket; the hash salt rotates daily, so it is exact at `day` granularity
+(the only one the dashboard requests) and becomes visitor-*days* at `week` or
+`month`. `device_breakdown` and `referrers` report only over the window where
+those columns were being collected, so both are empty on a database whose
+events all predate migration `d7a5e91c2f48`.
 
 #### `GET /api/v1/admin/analytics/raw` (Authenticated)
 
@@ -940,12 +974,49 @@ CREATE TABLE analytics_events (
     project_id      UUID REFERENCES projects(id),
     project_slug    TEXT,                -- denormalized for query convenience
     locale          locale_type,
-    metadata        JSONB,              -- flexible event-specific data
+    metadata        JSONB,              -- allowlisted event-specific data
     user_agent_hash TEXT,               -- SHA-256 truncated for dedup
     ip_hash         TEXT,               -- SHA-256 truncated for dedup
+    device_class    TEXT,               -- 'mobile'|'tablet'|'desktop'|'unknown'
+    referrer_host   TEXT,               -- hostname only, never a path or query
     created_at      TIMESTAMPTZ DEFAULT now()
 );
 ```
+
+`metadata` is **not** free-form despite the JSONB type. `backend/app/schemas/analytics.py`
+holds a key allowlist (`path`, `from`, `to`, `link`, `ref`) with a regex per key;
+anything else is dropped rather than rejected, because the endpoint is a
+fire-and-forget beacon that cannot react to a 4xx. Adding a tracked dimension
+means editing that file, which is the review checkpoint principle 2 needs.
+
+**The last two columns are derived, and both are narrower than what they are
+derived from** (migration `d7a5e91c2f48`):
+
+- `device_class` is computed from the User-Agent at write time by
+  `analytics_service.classify_device` and is one of four fixed strings. The UA
+  itself is still only ever stored as a truncated hash. Four buckets is
+  deliberately coarser than a UA-parsing library would give — browser and
+  version would be a fingerprinting surface, and "does the layout need to work
+  on a phone" is fully answered by four.
+- `referrer_host` is the `hostname` of `document.referrer` and nothing else.
+  `hooks/useAnalytics.ts` parses it client-side so the path and query string —
+  where a search term or an address would live — never leave the browser, and
+  the allowlist pattern rejects any value containing `/`, `?` or `:` as a
+  second line of defence.
+
+**NULL in `device_class` is load-bearing.** Every row the instrumented build
+writes carries a value, down to the literal `'unknown'` for a request with no UA
+header. So `device_class IS NULL` identifies exactly the rows written before the
+column existed, and the device and referrer aggregations filter on it — without
+that filter, a year of pre-existing rows would be reported as an enormous
+"unknown device, direct traffic" cohort that really means "not measured".
+
+**No synthetic rows.** `scripts/seed.py` used to plant ~500 fabricated events so
+this dashboard had a shape to render before the recording pipeline existed. It
+no longer does, and migration `d7a5e91c2f48` deletes the ones it planted
+(`ip_hash IS NULL` identifies them exactly: `record_event` hashes the client IP
+unconditionally, the seed set neither hash). Every number the admin dashboard
+shows is now earned by a real visit.
 
 ### Client-Side Implementation
 
@@ -970,7 +1041,9 @@ CREATE TABLE analytics_events (
 
 ### Aggregation Queries
 
-The admin dashboard runs pre-aggregated queries, not raw event scans:
+The admin dashboard runs pre-aggregated queries, not raw event scans. All of
+them live in `backend/app/services/analytics_service.py` and are assembled into
+one `AdminAnalyticsResponse` by `get_admin_analytics`.
 
 ```sql
 -- Daily page views
@@ -998,7 +1071,60 @@ SELECT locale, COUNT(DISTINCT session_id) as sessions
 FROM analytics_events
 WHERE event_type = 'page_view'
 GROUP BY locale;
+
+-- Top pages. `metadata.path` had been written on every page_view since the
+-- recording pipeline shipped and read by nothing: the dashboard could say how
+-- many pages were viewed, but not which ones.
+SELECT metadata->>'path' as path, COUNT(*) as views,
+       COUNT(DISTINCT session_id) as sessions
+FROM analytics_events
+WHERE event_type = 'page_view' AND metadata->>'path' IS NOT NULL
+GROUP BY path ORDER BY views DESC LIMIT 10;
+
+-- Session shape. Everything folds to one row per session FIRST, then
+-- aggregates those rows — averaging over events instead would weight a visitor
+-- who read ten pages ten times as heavily as one who read a single page, and
+-- the point of a session metric is that each visit counts once.
+WITH sessions AS (
+    SELECT session_id, COUNT(*) as events,
+           COUNT(*) FILTER (WHERE event_type = 'page_view') as page_views,
+           MIN(created_at) as first_seen, MAX(created_at) as last_seen,
+           COUNT(DISTINCT date_trunc('day', created_at)) as active_days
+    FROM analytics_events
+    WHERE created_at > now() - INTERVAL '30 days'
+    GROUP BY session_id
+)
+SELECT COUNT(*) FILTER (WHERE events = 1 AND page_views = 1)::float
+         / NULLIF(COUNT(*), 0)                              as bounce_rate,
+       AVG(events)                                          as events_per_session,
+       AVG(EXTRACT(epoch FROM last_seen - first_seen))
+         FILTER (WHERE events > 1)                          as avg_duration_s,
+       COUNT(*) FILTER (WHERE active_days > 1)              as returning
+FROM sessions;
+
+-- Acquisition + device, one row per session. The referrer rides only a
+-- session's first page_view, so grouping events instead of sessions would file
+-- every later click under 'direct' and bury the real source under our own
+-- traffic. The device_class IS NOT NULL filter is the collection-window guard
+-- described above.
+WITH dims AS (
+    SELECT session_id, MAX(device_class) as device_class,
+           MAX(referrer_host) as referrer_host
+    FROM analytics_events
+    WHERE created_at > now() - INTERVAL '30 days' AND device_class IS NOT NULL
+    GROUP BY session_id
+)
+SELECT COALESCE(referrer_host, 'direct') as host, COUNT(*) as sessions
+FROM dims GROUP BY host ORDER BY sessions DESC LIMIT 10;
 ```
+
+**Zero-filling is part of the contract, not cosmetics.** `event_breakdown`
+returns all seven event types and `hourly_activity` all 24 hours, present or
+not. A type missing from a list is indistinguishable from a type whose
+instrumentation broke; an explicit `0` says "we asked, and nobody did this".
+That distinction is why `project_link_click` and `language_change` went
+unnoticed for as long as they did — both were recorded from the start, and the
+summary simply counted five of the seven types.
 
 ### Data Retention
 

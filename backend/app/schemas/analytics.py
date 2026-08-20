@@ -49,6 +49,7 @@ class Granularity(str, enum.Enum):
 #   path       — App.tsx, on page_view
 #   from / to  — LanguageSwitcher.tsx, on language_change (locale codes)
 #   link       — ProjectDetail.tsx, on project_link_click ("demo")
+#   ref        — hooks/useAnalytics.ts, on the session's first page_view
 #
 # Note this is wider than the set the privacy test previously asserted
 # (`{"path"}`); that assertion passed only because the test never exercised
@@ -68,11 +69,21 @@ LOCALE_CODE_PATTERN = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?$")
 # A short interaction token chosen by our own code, not typed by anyone.
 LINK_TOKEN_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
+# A referrer's *host* and nothing else. The frontend parses `document.referrer`
+# and sends only `URL.hostname`, so the path and query string — the halves that
+# can carry a search term, a session token, or an email address — never leave
+# the browser. This pattern is the server-side half of that guarantee: it
+# rejects anything containing `/`, `?`, `:` or whitespace, so a client that
+# sent a whole URL gets the key dropped rather than stored. 253 chars is the
+# DNS maximum for a fully-qualified name.
+REFERRER_HOST_PATTERN = re.compile(r"^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$")
+
 METADATA_ALLOWLIST: dict[str, re.Pattern[str]] = {
     "path": PATH_PATTERN,
     "from": LOCALE_CODE_PATTERN,
     "to": LOCALE_CODE_PATTERN,
     "link": LINK_TOKEN_PATTERN,
+    "ref": REFERRER_HOST_PATTERN,
 }
 
 # The client generates this itself (`crypto.randomUUID()` in
@@ -121,6 +132,13 @@ def sanitize_metadata(metadata: dict | None) -> dict | None:
             path = _clean_path(value)
             if path is not None:
                 kept[key] = path
+        elif key == "ref":
+            # Hostnames are case-insensitive, and folding here rather than
+            # trusting the client keeps "Google.com" and "google.com" from
+            # becoming two rows in the referrer breakdown.
+            host = value.lower()
+            if pattern.fullmatch(host):
+                kept[key] = host
         elif pattern.fullmatch(value):
             kept[key] = value
 
@@ -171,19 +189,78 @@ class AnalyticsSummary(BaseModel):
     github_clicks: int
     cv_downloads: int
     contact_clicks: int
+    # Both of these were already being *recorded* and never reported: the
+    # dashboard counted five of the seven event types, so a visitor opening a
+    # live demo or switching to Spanish left no visible trace.
+    project_link_clicks: int
+    language_changes: int
+    total_events: int
     language_distribution: dict[str, int]
+
+
+class EngagementSummary(BaseModel):
+    """Session-shaped metrics — how much a visit contained, not how many
+    visits there were. Every field is derived from `analytics_events` rows
+    that were already being stored; none of it needed new collection, it
+    needed a query nobody had written.
+    """
+
+    # Fraction (0-1) of sessions whose entire footprint is one page_view: they
+    # arrived, looked at one page, and did nothing else measurable.
+    bounce_rate: float
+    pages_per_session: float
+    avg_events_per_session: float
+    # Averaged over sessions with more than one event only. A single-event
+    # session has a duration of exactly zero by construction, not because the
+    # visitor left instantly, so including them would just restate the bounce
+    # rate as a time.
+    avg_session_duration_seconds: float
+    # Sessions that appear on more than one distinct UTC day. localStorage
+    # holds the session id indefinitely, so this is "came back later", not
+    # "reloaded the tab".
+    returning_sessions: int
 
 
 class TimeseriesPoint(BaseModel):
     date: str
     page_views: int
     unique_sessions: int
+    # Distinct `ip_hash` in the bucket. The salt rotates daily
+    # (`hash_ip_daily`), so this is exact at day granularity and becomes
+    # visitor-*days* at week/month — the frontend only ever requests `day`.
+    unique_visitors: int
 
 
 class TopProjectOut(BaseModel):
     slug: str
     title: str
     views: int
+
+
+class TopPageOut(BaseModel):
+    path: str
+    views: int
+    unique_sessions: int
+
+
+class EventCountOut(BaseModel):
+    event_type: str
+    count: int
+
+
+class DeviceCountOut(BaseModel):
+    device_class: str
+    sessions: int
+
+
+class ReferrerCountOut(BaseModel):
+    host: str
+    sessions: int
+
+
+class HourlyPointOut(BaseModel):
+    hour: int
+    events: int
 
 
 class RecentEventOut(BaseModel):
@@ -194,6 +271,12 @@ class RecentEventOut(BaseModel):
 
 class AdminAnalyticsResponse(BaseModel):
     summary: AnalyticsSummary
+    engagement: EngagementSummary
     timeseries: list[TimeseriesPoint]
     top_projects: list[TopProjectOut]
+    top_pages: list[TopPageOut]
+    event_breakdown: list[EventCountOut]
+    device_breakdown: list[DeviceCountOut]
+    referrers: list[ReferrerCountOut]
+    hourly_activity: list[HourlyPointOut]
     recent_events: list[RecentEventOut]

@@ -246,6 +246,39 @@ numbers moved out to the legend and wear text tokens.
 chosen for accessible data encoding, and the specific numbers above are what
 justify them. If you change one, re-run the validator.
 
+### Two follow-up leaks, and the audit that should now catch a third
+
+The first admin pass missed two things, both found from a screenshot the owner
+sent rather than from re-reading the code — worth knowing because "it looks
+mostly monochrome" is not the same check as "it is monochrome":
+
+- **The sticky header hardcoded its background** — `rgba(248, 242, 239, .86)`
+  in light, teal in dark — instead of reading a token. `Header.module.css`
+  never had an admin override to hit, so a band of brand color sat across the
+  top of every admin page while everything under it went monochrome. Fixed by
+  introducing `--header-bg`, defined in **all four** palette scopes (light,
+  OS-dark, explicit-dark, admin) — the same three-scope pattern §3 already
+  requires for any component-local color, just previously unapplied here.
+- **Recharts' default `<Legend>` and `<Tooltip>` paint their text in the
+  series color**, not the surrounding ink. `AdminDashboard`'s legend already
+  carried a `formatter` overriding this; `NetworkHealth`'s two legends and
+  two tooltips didn't, and measuring the shipped page found "Memory" rendering
+  in literal `#eb6834` and "Requests" in `#2a78d6` — the exact `DATA_2`/`DATA_1`
+  hexes. This is the same rule the pill/dot/glyph pattern above already
+  encodes: **text wears text tokens; a swatch beside it carries identity.**
+  Any new recharts `<Legend>` or `<Tooltip>` on an admin page needs an explicit
+  `formatter`/`itemStyle`/`labelStyle` — the recharts default is not this
+  system's default.
+
+**When you touch an admin page, verify the token coverage rather than trust
+it.** The check that caught the header leak: list every color-ish
+`var(--…)` a component actually consumes (`grep -o 'var(--[a-z-]*)'` across
+its module CSS), then confirm each one is redefined inside
+`:root[data-admin]` — not merely present in the base `:root`. A token that
+exists only in the light/dark scopes and falls through on `/admin*` is exactly
+how the header leak happened, and it's silent: nothing errors, the page just
+quietly stays partly on-brand.
+
 ## 4. Typography
 
 | Role | Face | Fallback stack | Where |
@@ -364,11 +397,13 @@ project is actually on React 19; it's pinned to `^18.3.1` today, where
   scoped to that one button only. Don't introduce a third easing curve, and
   don't let the exception spread — if a second element wants spring-like
   motion, that's a sign to reconsider rather than copy the override.
-- Prefer animating `transform`/`opacity` over layout properties. The skill
-  proficiency bars are the reference example: the bar's *final* width is set
-  once via plain CSS (`style={{ width: "...%" }}`), and the *reveal* animates
-  `scaleX` from 0→1 with `transform-origin: left` — never animate `width`
-  itself for a repeated/scroll-triggered effect.
+- Prefer animating `transform`/`opacity` over layout properties.
+  `ScrollProgress` is the reference example: it reads `scrollYProgress` into a
+  `useSpring`, then sets that spring directly as `style={{ scaleX }}` on a
+  full-width bar rather than animating `width` — a value that changes on
+  every scroll frame never touches layout. (An earlier version of this
+  pattern lived in the since-removed skill proficiency bars — same technique,
+  gone with the feature; `ScrollProgress` is what's left to point at.)
 
 **Two pitfalls worth knowing before touching this code:**
 1. **A `motion.div` driven by a style value (`x`, `y`, `scale`, ...) sets its
@@ -386,6 +421,19 @@ project is actually on React 19; it's pinned to `^18.3.1` today, where
    `.decor > :global(.container) { ... }`. Search for this pattern
    (`> .container`, `.container >`, etc.) inside any `*.module.css` file
    before assuming it works.
+3. **`AnimatedGroup` wraps every direct child in its own `<motion.div>`**, so
+   a spacing rule that targets `:last-child`/`:first-of-type` on the
+   *content* inside those children almost never does what it looks like —
+   each child is the only element in its own wrapper, so `:last-child` is
+   true for all of them at once, not just the actual last one. This is what
+   broke the Skills page's between-band spacing (every `.group:last-child`
+   matched, zeroing the gap on every band) and, once fixed, exposed a second
+   instance of the same trap (`.sectionTitle:first-of-type` matching the only
+   remaining section title after Featured absorbed the other one). The fix in
+   both cases is the same: put spacing on the flex/grid **container**
+   (`gap`), not on the children's own selectors — a wrapper can't defeat a
+   parent's `gap`. Check for this whenever a section wrapped in
+   `AnimatedGroup` needs `:first-child`/`:last-child`/`:nth-child` spacing.
 
 ## 7. Layout patterns
 
@@ -452,7 +500,7 @@ to surprise:
   wrapped multi-line inline nav. This is exactly what the first full pass of
   this checklist caught: at 375px the inline nav wrapped onto four cramped
   lines before the `.menuToggle` breakpoint was introduced. Any two-column
-  page layout (About's info card, Contact's form + "elsewhere" panel, both
+  page layout (Experience's Quick Facts card, Contact's form + "elsewhere" panel, both
   §9) should also be re-checked here — they collapse to one column via their
   own `max-width` media queries, not this global breakpoint list.
 
@@ -464,10 +512,16 @@ pages — it's a five-minute pass, and it's the cheapest place to catch a
 
 **Home is a scrolling showcase, not a hub.** Structure, top to bottom:
 
-1. **Hero** — name, tagline, intro, two CTAs (view projects / download CV),
-   a real-data stats row (projects shipped / technologies used /
-   certifications earned — `StatCounter`, §6), and a scroll cue that
-   smooth-scrolls to the next section.
+1. **Hero** — a tilting portrait photo (`useTilt`, §6), name, tagline, intro,
+   two CTAs (view projects / download CV), a real-data stats row (projects
+   shipped / technologies used / certifications earned — `StatCounter`, §6),
+   and a scroll cue that smooth-scrolls to the next section. The portrait
+   frame is `8.075rem` — `9.5rem` sized down 15% on the owner's request.
+   Sizing the frame is the correct lever here, not `object-fit`/cropping the
+   `<img>` further inward: the source photo is a square `900x900` inside a
+   square frame, so `cover` already crops nothing, and scaling only the image
+   would just inset it inside a visible ring instead of shrinking the whole
+   element.
 2. **Projects showcase** — Home fetches *all* projects/certifications once
    (`useProjects()` / `useCertifications()`, no server-side `featured`
    filter) and derives the featured subset client-side with `useMemo`,
@@ -635,6 +689,19 @@ working image on the next. This exists because the seed data references
 upload paths with no file behind them yet — a broken native image icon is
 the opposite of "considered," so every place that renders a data-driven
 image needs this, not just the one that happened to be built first.
+
+**Hero image alt text defaults to the project title, and that default is
+wrong for a screenshot.** `scripts/seed.py` supports an optional `hero_alt`
+per project entry — used for `portfolio-platform`, whose hero
+(`PersonalProfile.png`, despite the filename — a Network Health admin
+screenshot, chosen because it's the part of that project a static image can
+actually show) needs to describe what's pictured, not repeat "Full-Stack
+Engineering Portfolio Platform" a screen reader already announced as the page
+heading. `project_images.alt_text` is a **single** column, not a translated
+one — `hero_alt` is English-only by schema, so don't add an `es` variant
+expecting anything to read it. A project without `hero_alt` keeps the old
+default (its English title), which is still correct for an ordinary build
+photo.
 
 ## 11. Accessibility
 

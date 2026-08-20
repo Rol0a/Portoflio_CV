@@ -42,4 +42,22 @@ class AnalyticsEvent(Base):
     event_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB)
     user_agent_hash: Mapped[str | None] = mapped_column(Text)
     ip_hash: Mapped[str | None] = mapped_column(Text)
+    # Coarse form factor derived from the User-Agent at write time
+    # (`analytics_service.classify_device`) and never the UA itself, which is
+    # only ever stored hashed. Plain TEXT rather than a Postgres enum so a new
+    # class costs a code change, not a migration.
+    #
+    # NULL has a precise meaning here and downstream aggregation depends on it:
+    # a row written by the instrumented build always carries a value ("unknown"
+    # when there is no UA header at all), so `device_class IS NULL` identifies
+    # exactly the rows written before this column existed. That is what lets the
+    # device and referrer breakdowns report on the window where they were
+    # actually collected instead of diluting it with rows that never could have
+    # had the data.
+    device_class: Mapped[str | None] = mapped_column(Text)
+    # Registrable host of `document.referrer`, host only — never the path or
+    # query string, which is where free text (and therefore PII) lives. NULL
+    # once collection has started means direct traffic: a typed URL, a
+    # bookmark, or a referrer the browser withheld.
+    referrer_host: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

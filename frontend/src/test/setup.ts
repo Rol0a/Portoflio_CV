@@ -37,3 +37,17 @@ vi.stubGlobal(
     dispatchEvent: vi.fn(),
   })),
 );
+
+// Nor ResizeObserver, which recharts' ResponsiveContainer constructs
+// unconditionally — without this, rendering any admin chart throws
+// "ResizeObserver is not defined" from inside a passive effect, which surfaces
+// as an uncaught exception rather than a failed assertion. Inert like the
+// IntersectionObserver stub above: the container is given explicit dimensions
+// in the tests that need them, so nothing has to actually be measured.
+class ResizeObserverStub implements ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+vi.stubGlobal("ResizeObserver", ResizeObserverStub);

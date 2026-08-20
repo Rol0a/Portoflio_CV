@@ -72,6 +72,18 @@
   color: var(--color-on-primary);
 }
 
+/* Thirteen tiles in one undifferentiated grid is a wall, not a dashboard.
+   These headings split them into traffic / engagement / interactions so each
+   run of tiles answers one question. */
+.sectionTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-2);
+}
+
 .statGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
@@ -102,6 +114,16 @@
   color: var(--data-1);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
+}
+
+/* Derived metrics need their definition next to them — "bounce rate" and
+   "returning" both have several plausible readings, and a number whose
+   definition lives only in a service docstring gets misread. */
+.statHint {
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+  margin: 0.35rem 0 0;
 }
 
 .chartsGrid {
@@ -182,6 +204,43 @@
   padding: 0.3rem 0.5rem;
   border-bottom: 1px solid var(--color-border);
   font-variant-numeric: tabular-nums;
+}
+
+/* Referrer hosts and event-type names are labels of wildly uneven length whose
+   counts span orders of magnitude — a bar chart would squash the small values
+   to invisibility and collide the long labels. A table shows both exactly. */
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.dataTable th,
+.dataTable td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.dataTable th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.dataTable td:last-child,
+.dataTable th:last-child {
+  text-align: right;
+}
+
+.dataTable tr:last-child td {
+  border-bottom: none;
+}
+
+.cardNote {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: var(--space-2) 0 0;
 }
 
 .langLegend {

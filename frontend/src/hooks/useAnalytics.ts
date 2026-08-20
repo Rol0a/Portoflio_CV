@@ -21,6 +21,29 @@ function getSessionId(): string {
   return sessionId;
 }
 
+/** Host of the page that linked here, or undefined for direct/internal arrivals.
+ *
+ *  Only ever the `hostname`. `document.referrer` is a full URL, and its path and
+ *  query string are exactly where free text lives — a Google result carries the
+ *  search terms, an email client can carry a token. Sending the host alone means
+ *  the parts that could hold personal data never leave the browser, which is a
+ *  stronger guarantee than the server-side allowlist that also rejects them.
+ *
+ *  Read once at module load, not per event: in an SPA `document.referrer` is a
+ *  property of the document, so it stays at whatever linked to the *initial*
+ *  load and never changes across client-side navigation. A same-origin referrer
+ *  is our own page after a hard reload, which is not an acquisition source, so
+ *  it is dropped. */
+const referrerHost: string | undefined = (() => {
+  if (typeof document === "undefined" || !document.referrer) return undefined;
+  try {
+    const { hostname } = new URL(document.referrer);
+    return hostname && hostname !== window.location.hostname ? hostname.toLowerCase() : undefined;
+  } catch {
+    return undefined;
+  }
+})();
+
 interface TrackOptions {
   projectSlug?: string;
   metadata?: Record<string, unknown>;
@@ -37,12 +60,20 @@ export function useAnalytics() {
       lastEventKey = key;
       lastEventAt = now;
 
+      // Attached to page_view only. Every event in a session shares one
+      // referrer by definition, and the admin aggregation takes one value per
+      // session anyway — sending it on every click would just widen the rows.
+      const metadata =
+        eventType === "page_view" && referrerHost
+          ? { ...options.metadata, ref: referrerHost }
+          : options.metadata;
+
       postAnalyticsEvent({
         eventType,
         sessionId: getSessionId(),
         locale: i18n.language.startsWith("es") ? "es" : "en",
         projectSlug: options.projectSlug,
-        metadata: options.metadata,
+        metadata,
       }).catch(() => {
         // Fire-and-forget: a tracking failure must never surface to the visitor.
       });

@@ -94,19 +94,58 @@ export interface AnalyticsSummary {
   githubClicks: number;
   cvDownloads: number;
   contactClicks: number;
+  projectLinkClicks: number;
+  languageChanges: number;
+  totalEvents: number;
   languageDistribution: Record<string, number>;
+}
+
+export interface EngagementSummary {
+  /** 0-1, not a percentage — the view formats it. */
+  bounceRate: number;
+  pagesPerSession: number;
+  avgEventsPerSession: number;
+  avgSessionDurationSeconds: number;
+  returningSessions: number;
 }
 
 export interface TimeseriesPoint {
   date: string;
   pageViews: number;
   uniqueSessions: number;
+  uniqueVisitors: number;
 }
 
 export interface TopProject {
   slug: string;
   title: string;
   views: number;
+}
+
+export interface TopPage {
+  path: string;
+  views: number;
+  uniqueSessions: number;
+}
+
+export interface EventCount {
+  eventType: string;
+  count: number;
+}
+
+export interface DeviceCount {
+  deviceClass: string;
+  sessions: number;
+}
+
+export interface ReferrerCount {
+  host: string;
+  sessions: number;
+}
+
+export interface HourlyPoint {
+  hour: number;
+  events: number;
 }
 
 export interface RecentEvent {
@@ -117,8 +156,14 @@ export interface RecentEvent {
 
 export interface AdminAnalytics {
   summary: AnalyticsSummary;
+  engagement: EngagementSummary;
   timeseries: TimeseriesPoint[];
   topProjects: TopProject[];
+  topPages: TopPage[];
+  eventBreakdown: EventCount[];
+  deviceBreakdown: DeviceCount[];
+  referrers: ReferrerCount[];
+  hourlyActivity: HourlyPoint[];
   recentEvents: RecentEvent[];
 }
 

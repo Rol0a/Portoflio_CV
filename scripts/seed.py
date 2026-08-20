@@ -3,19 +3,30 @@
 Run inside the backend container (where this file is mounted alongside the `app`
 package at /app): `python -m scripts.seed`, or via `make db-seed`.
 Safe to re-run: existing rows (matched by unique slug/name) are left alone.
+
+**This script no longer writes analytics events, and must not start again.**
+It used to plant ~500 synthetic ones across a 30-day window so the M10 admin
+dashboard had a shape to render before the M8 recording pipeline existed. That
+pipeline exists and has been recording real visits since 2026-08-19; the demo
+rows stopped being scaffolding at that moment and became false numbers on an
+admin dashboard, mixed inseparably into the real ones on every chart. Migration
+`d7a5e91c2f48` deletes them (`ip_hash IS NULL` identifies them exactly — see
+that file), and removing the generator here is what stops the next `make
+db-seed` from putting them back.
+
+Everything this script seeds is *content the site is about* — skills, projects,
+certifications, the admin user. Measurements are not content: they are supposed
+to be earned by a visitor showing up.
 """
 
 import asyncio
-import random
-import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import date
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.config import settings
 from app.database import async_session_factory
 from app.models.admin import AdminUser
-from app.models.analytics import AnalyticsEvent, AnalyticsEventType
 from app.models.certification import Certification, CertificationTranslation
 from app.models.project import Locale, Project, ProjectImage, ProjectTranslation, Technology, TechCategory
 from app.models.skill import Skill, SkillCategory
@@ -566,90 +577,6 @@ async def seed_certifications(db) -> None:
     await db.flush()
 
 
-async def seed_demo_analytics_events(db) -> None:
-    """Synthetic traffic for the M10 admin dashboard.
-
-    This is NOT the M8 event-recording pipeline — no such pipeline exists yet, so
-    real visits aren't tracked. This just seeds plausible-looking history so the
-    dashboard's aggregation queries and charts can actually be exercised. Skips
-    entirely if the table already has rows, so re-running `seed.py` never piles
-    up duplicate fake traffic.
-    """
-    existing_count = (await db.execute(select(func.count()).select_from(AnalyticsEvent))).scalar_one()
-    if existing_count > 0:
-        return
-
-    project_slugs = [entry["slug"] for entry in PROJECTS]
-    rng = random.Random(42)
-    events: list[AnalyticsEvent] = []
-    now = datetime.now(timezone.utc)
-
-    for day_offset in range(30, -1, -1):
-        day = now - timedelta(days=day_offset)
-        sessions_today = [str(uuid.uuid4()) for _ in range(rng.randint(3, 14))]
-
-        for session_id in sessions_today:
-            locale = rng.choices([Locale.en, Locale.es], weights=[7, 3])[0]
-            visit_start = day.replace(
-                hour=rng.randint(0, 23), minute=rng.randint(0, 59), second=rng.randint(0, 59)
-            )
-
-            events.append(
-                AnalyticsEvent(
-                    event_type=AnalyticsEventType.page_view,
-                    session_id=session_id,
-                    locale=locale,
-                    created_at=visit_start,
-                )
-            )
-
-            if rng.random() < 0.55:
-                slug = rng.choice(project_slugs)
-                events.append(
-                    AnalyticsEvent(
-                        event_type=AnalyticsEventType.project_view,
-                        session_id=session_id,
-                        project_slug=slug,
-                        locale=locale,
-                        created_at=visit_start + timedelta(seconds=rng.randint(5, 120)),
-                    )
-                )
-                if rng.random() < 0.4:
-                    events.append(
-                        AnalyticsEvent(
-                            event_type=AnalyticsEventType.github_click,
-                            session_id=session_id,
-                            project_slug=slug,
-                            locale=locale,
-                            created_at=visit_start + timedelta(seconds=rng.randint(30, 180)),
-                        )
-                    )
-
-            if rng.random() < 0.15:
-                events.append(
-                    AnalyticsEvent(
-                        event_type=AnalyticsEventType.cv_download,
-                        session_id=session_id,
-                        locale=locale,
-                        created_at=visit_start + timedelta(seconds=rng.randint(10, 200)),
-                    )
-                )
-
-            if rng.random() < 0.08:
-                events.append(
-                    AnalyticsEvent(
-                        event_type=AnalyticsEventType.contact_click,
-                        session_id=session_id,
-                        locale=locale,
-                        created_at=visit_start + timedelta(seconds=rng.randint(10, 240)),
-                    )
-                )
-
-    db.add_all(events)
-    await db.flush()
-    print(f"Seeded {len(events)} synthetic analytics events (demo data for M10 — not real traffic).")
-
-
 async def seed() -> None:
     async with async_session_factory() as db:
         await seed_admin_user(db)
@@ -728,7 +655,6 @@ async def seed() -> None:
             db.add(project)
 
         await db.flush()
-        await seed_demo_analytics_events(db)
 
         await db.commit()
         print("Seed complete.")

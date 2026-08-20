@@ -290,6 +290,17 @@ async def test_no_unexpected_columns_exist_on_the_events_table(db):
         "user_agent_hash",
         "ip_hash",
         "created_at",
+        # Added by migration d7a5e91c2f48 and reviewed against §9's "no PII"
+        # rule before being listed here, which is the whole point of this test.
+        # `device_class` is one of four fixed strings derived from the UA at
+        # write time — strictly less information than the UA hash beside it,
+        # and the UA itself is still never stored. `referrer_host` is a bare
+        # hostname: the frontend sends `URL.hostname` and the metadata
+        # allowlist rejects anything containing a path or query string, so the
+        # halves of a referrer that can carry a search term or an address never
+        # reach this table.
+        "device_class",
+        "referrer_host",
     }
     assert columns == documented, (
         "analytics_events schema drifted from architecture.md §9; "

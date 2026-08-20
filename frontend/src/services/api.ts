@@ -217,10 +217,30 @@ interface AdminAnalyticsResponse {
     github_clicks: number;
     cv_downloads: number;
     contact_clicks: number;
+    project_link_clicks: number;
+    language_changes: number;
+    total_events: number;
     language_distribution: Record<string, number>;
   };
-  timeseries: { date: string; page_views: number; unique_sessions: number }[];
+  engagement: {
+    bounce_rate: number;
+    pages_per_session: number;
+    avg_events_per_session: number;
+    avg_session_duration_seconds: number;
+    returning_sessions: number;
+  };
+  timeseries: {
+    date: string;
+    page_views: number;
+    unique_sessions: number;
+    unique_visitors: number;
+  }[];
   top_projects: { slug: string; title: string; views: number }[];
+  top_pages: { path: string; views: number; unique_sessions: number }[];
+  event_breakdown: { event_type: string; count: number }[];
+  device_breakdown: { device_class: string; sessions: number }[];
+  referrers: { host: string; sessions: number }[];
+  hourly_activity: { hour: number; events: number }[];
   recent_events: { event_type: string; project_slug: string | null; timestamp: string }[];
 }
 
@@ -238,14 +258,40 @@ export async function getAdminAnalytics(days: number, granularity: Granularity):
       githubClicks: data.summary.github_clicks,
       cvDownloads: data.summary.cv_downloads,
       contactClicks: data.summary.contact_clicks,
+      projectLinkClicks: data.summary.project_link_clicks,
+      languageChanges: data.summary.language_changes,
+      totalEvents: data.summary.total_events,
       languageDistribution: data.summary.language_distribution,
+    },
+    engagement: {
+      bounceRate: data.engagement.bounce_rate,
+      pagesPerSession: data.engagement.pages_per_session,
+      avgEventsPerSession: data.engagement.avg_events_per_session,
+      avgSessionDurationSeconds: data.engagement.avg_session_duration_seconds,
+      returningSessions: data.engagement.returning_sessions,
     },
     timeseries: data.timeseries.map((point) => ({
       date: point.date,
       pageViews: point.page_views,
       uniqueSessions: point.unique_sessions,
+      uniqueVisitors: point.unique_visitors,
     })),
     topProjects: data.top_projects,
+    topPages: data.top_pages.map((page) => ({
+      path: page.path,
+      views: page.views,
+      uniqueSessions: page.unique_sessions,
+    })),
+    eventBreakdown: data.event_breakdown.map((entry) => ({
+      eventType: entry.event_type,
+      count: entry.count,
+    })),
+    deviceBreakdown: data.device_breakdown.map((entry) => ({
+      deviceClass: entry.device_class,
+      sessions: entry.sessions,
+    })),
+    referrers: data.referrers,
+    hourlyActivity: data.hourly_activity,
     recentEvents: data.recent_events.map((event) => ({
       eventType: event.event_type,
       projectSlug: event.project_slug,
